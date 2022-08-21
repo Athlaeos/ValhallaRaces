@@ -1,0 +1,51 @@
+pick_race: true # If true, the player will be forced to pick a race on joining. If false, their race will have to be determined through commands
+pick_class: true # If true, the player will be forced to pick a class on joining. If false, their class will have to be determined through commands
+
+warning_message_race: '&cAre you sure you want to be a/an %race%&c?'
+warning_message_class: '&cAre you sure you want to be a/an %class%&c?'
+confirm_message_race: '&cYou are now a/an %race%!'
+confirm_message_class: '&cYou are now a/an %class%!'
+
+menus:
+  races_slots: 45
+  races_title: '&7Pick Your Race'
+  races_decoration: # For decoration you may add ;<number> to any of these entries to determine their custom model data
+    0: GRAY_STAINED_GLASS_PANE
+    1: GRAY_STAINED_GLASS_PANE
+    2: GRAY_STAINED_GLASS_PANE
+    3: GRAY_STAINED_GLASS_PANE
+    4: GRAY_STAINED_GLASS_PANE
+    5: GRAY_STAINED_GLASS_PANE
+    6: GRAY_STAINED_GLASS_PANE
+    7: GRAY_STAINED_GLASS_PANE
+    8: GRAY_STAINED_GLASS_PANE
+    36: GRAY_STAINED_GLASS_PANE
+    37: GRAY_STAINED_GLASS_PANE
+    38: GRAY_STAINED_GLASS_PANE
+    39: GRAY_STAINED_GLASS_PANE
+    40: GRAY_STAINED_GLASS_PANE
+    41: GRAY_STAINED_GLASS_PANE
+    42: GRAY_STAINED_GLASS_PANE
+    43: GRAY_STAINED_GLASS_PANE
+    44: GRAY_STAINED_GLASS_PANE
+  classes_slots: 45
+  classes_title: '&7Pick Your Class'
+  classes_decoration:
+    0: GRAY_STAINED_GLASS_PANE
+    1: GRAY_STAINED_GLASS_PANE
+    2: GRAY_STAINED_GLASS_PANE
+    3: GRAY_STAINED_GLASS_PANE
+    4: GRAY_STAINED_GLASS_PANE
+    5: GRAY_STAINED_GLASS_PANE
+    6: GRAY_STAINED_GLASS_PANE
+    7: GRAY_STAINED_GLASS_PANE
+    8: GRAY_STAINED_GLASS_PANE
+    36: GRAY_STAINED_GLASS_PANE
+    37: GRAY_STAINED_GLASS_PANE
+    38: GRAY_STAINED_GLASS_PANE
+    39: GRAY_STAINED_GLASS_PANE
+    40: GRAY_STAINED_GLASS_PANE
+    41: GRAY_STAINED_GLASS_PANE
+    42: GRAY_STAINED_GLASS_PANE
+    43: GRAY_STAINED_GLASS_PANE
+    44: GRAY_STAINED_GLASS_PANE

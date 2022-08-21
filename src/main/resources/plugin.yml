@@ -1,0 +1,16 @@
+name: ValhallaRaces
+version: '1.1'
+main: me.athlaeos.valhallaraces.ValhallaRaces
+api-version: 1.16
+depend: [ ValhallaMMO ]
+softdepend: [ PlaceholderAPI ]
+authors: [ Athlaeos ]
+description: Hooks into ValhallaMMO to implement races, each with their own buffs and features
+commands:
+  races:
+    description: "Base command for ValhallaRaces commands"
+    aliases: [ vraces ]
+permissions:
+  valhallaraces.manager:
+    description: Allows the user to manage their own and other people's races/classes
+    default: op

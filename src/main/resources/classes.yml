@@ -1,0 +1,206 @@
+warrior:
+  position: 10
+  icon: IRON_SWORD
+  data: -1
+  display_name: '&cWarrior'
+  description:
+    - '&cWarriors &7are opportunistic fighters,'
+    - '&7who prefer the safety of light blades'
+    - '&7and heavy protection.'
+    - '&8&m                                       '
+    - '&cWarriors &7benefit from'
+    - '&f- &c+10% &fMelee Damage Resistance'
+    - '&f- &c+10% &fProjectile Damage Resistance'
+    - '&f- &c+1 &fDamage'
+    - '&f- &c+10% &fArmor'
+  stat_buffs:
+    MELEE_RESISTANCE: 0.1 # 10% resistance against melee damage
+    PROJECTILE_RESISTANCE: 0.1 # 10% resistance against projectile damage
+    ATTACK_DAMAGE_BONUS: 1 # 1 extra attack damage on all attacks
+    ARMOR_MULTIPLIER_BONUS: 0.1 # Armor is 10% more effective
+  race_filter: # This is just an example of how you can limit certain classes to certain races, and potentially make different classes per race
+    - human
+    - dwarf
+    - elf
+  commands: # This is mostly just an example of how you can execute commands when a race/class is unlocked
+    - minecraft:experience add %player% 1 points
+barbarian:
+  position: 19
+  icon: IRON_AXE
+  data: -1
+  display_name: '&cBarbarian'
+  description:
+    - '&cBarbarians &7are relentless fighters,'
+    - '&7who prefer to decimate their foes'
+    - '&7through sheer strength and brute force.'
+    - '&8&m                                       '
+    - '&cBarbarians &7benefit from'
+    - '&f- &c+20% &fKnockback Resistance'
+    - '&f- &c+20% &fHealing'
+    - '&f- &c+2 &fDamage'
+    - '&f- &c+2 &fMaximum Health'
+  stat_buffs:
+    KNOCKBACK_RESISTANCE: 0.2
+    HEALING_BONUS: 0.2
+    ATTACK_DAMAGE_BONUS: 2
+    HEALTH_BONUS: 2
+  commands:
+    - minecraft:experience add %player% 1 points
+ranger:
+  position: 28
+  icon: BOW
+  data: -1
+  display_name: '&cRangers'
+  description:
+    - '&cRangers &7are stealthy assassins,'
+    - '&7who prefer not to fight close ranged at'
+    - '&7all and instead take out their foes at'
+    - '&7a safe distance.'
+    - '&8&m                                       '
+    - '&cRangers &7benefit from'
+    - '&f- &c+10% &fArmor Piercing'
+    - '&f- &c+10% &fMovement Speed'
+    - '&f- &c+10% &fRanged Damage'
+    - '&f- &c-20% &fAmmo Consumption'
+  stat_buffs:
+    ARMOR_FRACTION_IGNORED: 0.1
+    MOVEMENT_SPEED_BONUS: 0.1
+    ARCHERY_DAMAGE: 0.1
+    ARCHERY_AMMO_SAVE_CHANCE: 0.2
+  commands:
+    - minecraft:experience add %player% 1 points
+alchemist:
+  position: 13
+  icon: BREWING_STAND
+  data: -1
+  display_name: '&dAlchemist'
+  description:
+    - '&dAlchemists &7are fantastic chemists,'
+    - '&7able to transmute materials into others,'
+    - '&7melt their enemies with potions, and'
+    - '&7assist their party with healing and buffs.'
+    - '&8&m                                       '
+    - '&dAlchemists &7benefit from'
+    - '&f- &d+25 &fPotion Quality'
+    - '&f- &d+50% &fBrewing Speed'
+    - '&f- &d+100% &fPotion Throwing Range'
+    - '&f- &d-20% &fPotion Consumption'
+  stat_buffs:
+    ALCHEMY_QUALITY_GENERAL: 25
+    ALCHEMY_BREW_SPEED: 0.5
+    ALCHEMY_POTION_VELOCITY: 1
+    ALCHEMY_POTION_SAVE: 0.2
+enchanter:
+  position: 22
+  icon: ENCHANTMENT_TABLE
+  data: -1
+  display_name: '&bEnchanter'
+  description:
+    - '&bEnchanters &7are scholars of magic,'
+    - '&7able to imbue items with spells to'
+    - '&7enhance their strengths.'
+    - '&8&m                                       '
+    - '&bEnchanters &7benefit from'
+    - '&f- &b+25 &fEnchanting Quality'
+    - '&f- &b+10% &fSkill Experience'
+    - '&f- &b+20% &fEnchanting Experience'
+    - '&f- &b-30% &fExperienced Used'
+  stat_buffs:
+    ENCHANTING_QUALITY_GENERAL: 25
+    GLOBAL_EXP_GAIN: 0.1
+    ENCHANTING_VANILLA_EXP_GAIN: 0.2
+    ENCHANTING_REFUND_CHANCE: 1
+    ENCHANTING_REFUND_AMOUNT: 0.3
+  commands:
+    - minecraft:experience add %player% 1 points
+blacksmith:
+  position: 31
+  icon: ANVIL
+  data: -1
+  display_name: '&aBlacksmith'
+  description:
+    - '&aBlacksmiths &7are experts of metal,'
+    - '&7creating more durable tools and armor'
+    - '&7and razor sharp, well balanced blades.'
+    - '&8&m                                       '
+    - '&aBlacksmiths &7benefit from'
+    - '&f- &a+25 &fSmithing Quality'
+    - '&f- &a+50% &fFaster Crafting'
+    - '&f- &a-20% &fDurability Taken'
+  stat_buffs:
+    SMITHING_QUALITY_GENERAL: 25
+    CRAFTING_TIME_REDUCTION: 0.5
+    DURABILITY_MULTIPLIER_BONUS: -0.2
+  commands:
+    - minecraft:experience add %player% 1 points
+miner:
+  position: 16
+  icon: IRON_PICKAXE
+  data: -1
+  display_name: '&eMiner'
+  description:
+    - '&eMiners &7delve deep into the earth,'
+    - '&7looking for riches, and serve as the'
+    - '&7backbone of industry.'
+    - '&8&m                                       '
+    - '&eMiners &7benefit from'
+    - '&f- &e+30% &fBlast Block Drops'
+    - '&f- &e+50% &fOre Experience'
+    - '&f- &e-50% &fExplosion Damage Taken'
+    - '&f- &e+50% &fExplosion Power'
+  stat_buffs:
+    MINING_BLAST_DROP_MULTIPLIER: 0.3
+    MINING_ORE_EXPERIENCE_MULTIPLIER: 0.5
+    MINING_BLAST_EXPLOSION_DAMAGE_MULTIPLIER: -0.5
+    MINING_BLAST_RADIUS_MULTIPLIER: 0.5
+  commands:
+    - minecraft:experience add %player% 1 points
+farmer:
+  position: 25
+  icon: IRON_HOE
+  data: -1
+  display_name: '&eFarmer'
+  description:
+    - '&eFarmers &7live a calm, simple life'
+    - '&7providing their cities with food'
+    - '&7and alchemical reagents.'
+    - '&8&m                                       '
+    - '&eFarmers &7benefit from'
+    - '&f- &e+30% &fFarming Drops'
+    - '&f- &e+3 &fFishing Luck'
+    - '&f- &e+1.5 &fInstant Crop Growths'
+    - '&f- &e+50% &fNutrition'
+  stat_buffs:
+    FARMING_DROP_MULTIPLIER: 0.3
+    FARMING_FISHING_REWARD_TIER: 3
+    FARMING_FISHING_TIME_MULTIPLIER: -0.2
+    FARMING_INSTANT_GROWTH_RATE: 1.5
+    FARMING_RARE_DROP_CHANCE_MULTIPLIER: 1
+    FARMING_HUNGER_MULTIPLIER_FISH: 0.5
+    FARMING_HUNGER_MULTIPLIER_MEAT: 0.5
+    FARMING_HUNGER_MULTIPLIER_VEGETARIAN: 0.5
+    FARMING_HUNGER_MULTIPLIER_GARBAGE: 0.5
+    FARMING_HUNGER_MULTIPLIER_MAGICAL: 0.5
+  commands:
+    - minecraft:experience add %player% 1 points
+terraformer_human:
+  position: 34
+  icon: IRON_SHOVEL
+  data: -1
+  display_name: '&eTerraformer'
+  description:
+    - '&eTerraformers &7construct, shape, and'
+    - '&7maintain the world around them.'
+    - '&7Most suitable for the creative types.'
+    - '&8&m                                       '
+    - '&eTerraformers &7benefit from'
+    - '&f- &e+100% &fWoodcutting Drops'
+    - '&f- &e+200% &fDigging Rare Drops'
+    - '&f- &e+5% &fMovement Speed'
+  stat_buffs:
+    LANDSCAPING_WOODCUTTING_DROP_MULTIPLIER: 1
+    LANDSCAPING_DIGGING_RARE_DROP_MULTIPLIER: 2
+    MOVEMENT_SPEED_BONUS: 0.05
+  commands:
+    - minecraft:experience add %player% 1 points
+
