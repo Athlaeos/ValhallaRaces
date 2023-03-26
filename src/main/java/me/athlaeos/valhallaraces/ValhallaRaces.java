@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 public final class ValhallaRaces extends JavaPlugin {
     private static ValhallaRaces plugin = null;
+    private PlayerPickRaceClassListener racePickerListener;
 
     @Override
     public void onEnable() {
@@ -24,11 +25,16 @@ public final class ValhallaRaces extends JavaPlugin {
         ClassManager.getInstance().loadClasses();
         new RacesCommand();
 
-        this.getServer().getPluginManager().registerEvents(new PlayerPickRaceClassListener(), this);
+        racePickerListener = new PlayerPickRaceClassListener();
+        this.getServer().getPluginManager().registerEvents(racePickerListener, this);
         // Plugin startup logic
         if(getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RacesPlaceholderExpansion().register();
         }
+    }
+
+    public PlayerPickRaceClassListener getRacePickerListener() {
+        return racePickerListener;
     }
 
     @Override

@@ -11,6 +11,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -20,13 +21,21 @@ import java.util.Map;
 
 public class ClassPickerMenu extends Menu {
     private static final NamespacedKey classIDKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_classbutton");
-    private static final Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
-    private static final String title = initializeTitle();
-    private static final String warning = initializeWarningMessage();
-    private static final String completed = initializeConfirmationMessage();
-    private static final int slots = initializeGuiSize();
+    private static Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
+    private static String title = initializeTitle();
+    private static String warning = initializeWarningMessage();
+    private static String completed = initializeConfirmationMessage();
+    private static int slots = initializeGuiSize();
     private Class preConfirmClass = null;
     boolean hasClassesAvailable = false;
+
+    public static void reload(){
+        decorativeItems = populateDecorativeItems();
+        title = initializeTitle();
+        warning = initializeWarningMessage();
+        completed = initializeConfirmationMessage();
+        slots = initializeGuiSize();
+    }
 
     public ClassPickerMenu(PlayerMenuUtility playerMenuUtility) {
         super(playerMenuUtility);
@@ -72,10 +81,10 @@ public class ClassPickerMenu extends Menu {
                 if (preConfirmClass == null || !preConfirmClass.equals(clickedClass)){
                     preConfirmClass = clickedClass;
                     setMenuItems();
-                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%class%", Utils.getItemName(clickedClass.getIcon())));
+                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%class%", Utils.getItemName(clickedClass.getIcon()).trim()));
                 } else {
                     ClassManager.getInstance().setClass(playerMenuUtility.getOwner(), clickedClass);
-                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%class%", Utils.getItemName(clickedClass.getIcon()))));
+                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%class%", Utils.getItemName(clickedClass.getIcon()).trim())));
                     playerMenuUtility.getOwner().closeInventory();
                 }
             }
@@ -128,6 +137,7 @@ public class ClassPickerMenu extends Menu {
             ItemStack icon = r.getIcon().clone();
             ItemMeta iconMeta = icon.getItemMeta();
             if (iconMeta == null) continue;
+            iconMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_POTION_EFFECTS);
             iconMeta.getPersistentDataContainer().set(classIDKey, PersistentDataType.STRING, r.getName());
             icon.setItemMeta(iconMeta);
             inventory.setItem(r.getGuiPosition(), icon);

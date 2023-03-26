@@ -3,8 +3,10 @@ package me.athlaeos.valhallaraces;
 import me.athlaeos.valhallammo.managers.AccumulativeStatManager;
 import me.athlaeos.valhallammo.managers.PerkRewardsManager;
 import me.athlaeos.valhallammo.perkrewards.PerkReward;
+import me.athlaeos.valhallammo.statsources.AccumulativeStatSource;
 import me.athlaeos.valhallammo.statsources.EvEAccumulativeStatSource;
 import me.athlaeos.valhallaraces.config.ConfigManager;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -20,12 +22,21 @@ public class ClassManager {
     private static ClassManager manager = null;
     private static final NamespacedKey classKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_class");
 
-    private final Map<String, Class> registeredClasses = new HashMap<>();
+    private Map<String, Class> registeredClasses = new HashMap<>();
 
     public void loadClasses(){
+        registeredClasses = new HashMap<>();
         YamlConfiguration config = ConfigManager.getInstance().getConfig("classes.yml").get();
         ConfigurationSection raceSection = config.getConfigurationSection("");
         if (raceSection != null){
+            for (String stat : AccumulativeStatManager.getInstance().getSources().keySet()){
+                Collection<AccumulativeStatSource> sources = AccumulativeStatManager.getInstance().getSources().get(stat);
+                for (AccumulativeStatSource source : new HashSet<>(sources)){
+                    if (source instanceof OffensiveClassStatSource || source instanceof ClassStatSource){
+                        AccumulativeStatManager.getInstance().getSources().get(stat).remove(source);
+                    }
+                }
+            }
             for (String r : raceSection.getKeys(false)){
                 ItemStack alternativeIcon = config.getItemStack(r + ".true_icon");
                 Material icon = Material.BOOK;
@@ -58,8 +69,13 @@ public class ClassManager {
                     for (String statType : statsSection.getKeys(false)){
                         double buff = config.getDouble(r + ".stat_buffs." + statType);
                         if (buff != 0){
-                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream().anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
-                                AccumulativeStatManager.getInstance().register(statType, new OffensiveClassStatSource(r, buff));
+                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream()
+                                    .anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
+                                if (AccumulativeStatManager.getInstance().getAttackerStatPossessiveMap().getOrDefault(statType, false)){
+                                    AccumulativeStatManager.getInstance().register(statType, new OffensiveClassStatSource(r, buff));
+                                } else {
+                                    AccumulativeStatManager.getInstance().register(statType, new DefensiveClassStatSource(r, buff));
+                                }
                             } else {
                                 AccumulativeStatManager.getInstance().register(statType, new ClassStatSource(r, buff));
                             }
@@ -112,7 +128,24 @@ public class ClassManager {
                 reward.execute(p);
             }
             for (String command : playerClass.getCommands()){
-                ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
+                if (delayArg != null){
+                    try {
+                        int delay = Integer.parseInt(delayArg);
+                        ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
+                                ValhallaRaces.getPlugin(),
+                                () -> { ValhallaRaces.getPlugin().getServer().dispatchCommand(
+                                        ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
+                                                .replace("%player%", p.getName())
+                                                .replace("<delay:" + delayArg + ">", ""));
+                                }
+                                , delay);
+                    } catch (IllegalArgumentException ignored){
+                        ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
+                    }
+                } else {
+                    ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                }
             }
         }
     }
@@ -124,5 +157,12 @@ public class ClassManager {
     public static ClassManager getInstance(){
         if (manager == null) manager = new ClassManager();
         return manager;
+    }
+
+    public void reload(){
+        manager = null;
+        ConfigManager.getInstance().getConfig("classes.yml").reload();
+        ConfigManager.getInstance().getConfig("classes.yml").save();
+        ClassManager.getInstance().loadClasses();
     }
 }

@@ -11,6 +11,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -20,13 +21,21 @@ import java.util.Map;
 
 public class RacePickerMenu extends Menu {
     private static final NamespacedKey raceIDKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_racebutton");
-    private static final Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
-    private static final String title = initializeTitle();
-    private static final String warning = initializeWarningMessage();
-    private static final String completed = initializeConfirmationMessage();
-    private static final int slots = initializeGuiSize();
+    private static Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
+    private static String title = initializeTitle();
+    private static String warning = initializeWarningMessage();
+    private static String completed = initializeConfirmationMessage();
+    private static int slots = initializeGuiSize();
     private Race preConfirmRace = null;
     private boolean hasRacesAvailable = false;
+
+    public static void reload(){
+        decorativeItems = populateDecorativeItems();
+        title = initializeTitle();
+        warning = initializeWarningMessage();
+        completed = initializeConfirmationMessage();
+        slots = initializeGuiSize();
+    }
 
     public RacePickerMenu(PlayerMenuUtility playerMenuUtility) {
         super(playerMenuUtility);
@@ -68,10 +77,10 @@ public class RacePickerMenu extends Menu {
                 if (preConfirmRace == null || !preConfirmRace.equals(clickedRace)){
                     preConfirmRace = clickedRace;
                     setMenuItems();
-                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%race%", Utils.getItemName(clickedRace.getIcon())));
+                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%race%", Utils.getItemName(clickedRace.getIcon()).trim()));
                 } else {
                     RaceManager.getInstance().setRace(playerMenuUtility.getOwner(), clickedRace);
-                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%race%", Utils.getItemName(clickedRace.getIcon()))));
+                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%race%", Utils.getItemName(clickedRace.getIcon()).trim())));
                     if (clickedRace.getCitySpawn() != null) playerMenuUtility.getOwner().teleport(clickedRace.getCitySpawn(), PlayerTeleportEvent.TeleportCause.PLUGIN);
                     playerMenuUtility.getOwner().closeInventory();
                 }
@@ -113,14 +122,23 @@ public class RacePickerMenu extends Menu {
 
         for (Race r : RaceManager.getInstance().getRegisteredRaces().values()){
             if (r.getPermissionRequired() != null){
-                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
+                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) {
+                    continue;
+                }
             }
-            if (r.getGuiPosition() >= slots) continue;
+            if (r.getGuiPosition() >= slots) {
+                continue;
+            }
 
-            if (Utils.isItemEmptyOrNull(r.getIcon())) continue;
+            if (Utils.isItemEmptyOrNull(r.getIcon())) {
+                continue;
+            }
             ItemStack icon = r.getIcon().clone();
             ItemMeta iconMeta = icon.getItemMeta();
-            if (iconMeta == null) continue;
+            if (iconMeta == null) {
+                continue;
+            }
+            iconMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_POTION_EFFECTS);
             iconMeta.getPersistentDataContainer().set(raceIDKey, PersistentDataType.STRING, r.getName());
             icon.setItemMeta(iconMeta);
             inventory.setItem(r.getGuiPosition(), icon);

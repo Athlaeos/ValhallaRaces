@@ -4,6 +4,7 @@ import me.athlaeos.valhallammo.perkrewards.PerkReward;
 import me.athlaeos.valhallammo.utility.Utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -53,6 +54,7 @@ public class Race {
             if (modelData >= 0){
                 iMeta.setCustomModelData(modelData);
             }
+            iMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         }
         i.setItemMeta(iMeta);
         this.icon = i;
@@ -72,6 +74,7 @@ public class Race {
             if (modelData >= 0){
                 iMeta.setCustomModelData(modelData);
             }
+            iMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         }
         i.setItemMeta(iMeta);
         this.icon = i;

@@ -117,15 +117,26 @@ public class RacesCommand implements TabExecutor {
                     }
                 }
             }
+        } else if (args[0].equalsIgnoreCase("reload")){
+            ConfigManager.getInstance().getConfig("config.yml").reload();
+            ConfigManager.getInstance().getConfig("config.yml").save();
+            RaceManager.getInstance().reload();
+            ClassManager.getInstance().reload();
+            ValhallaRaces.getPlugin().getRacePickerListener().reload();
+            ClassPickerMenu.reload();
+            RacePickerMenu.reload();
+
+            sender.sendMessage(Utils.chat("&aReload complete"));
+            return true;
         }
-        sender.sendMessage(Utils.chat("&cInvalid command usage, /races <set/reset> <class/race> [player] [class/race]"));
+        sender.sendMessage(Utils.chat("&cInvalid command usage, /races <set/reset/reload> <class/race> [player] [class/race]"));
         return false;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String s, String[] args) {
         if (args.length == 1){
-            return Arrays.asList("reset", "set", "seticon");
+            return Arrays.asList("reset", "set", "seticon", "reload");
         }
         if (args.length == 2){
             return Arrays.asList("class", "race");

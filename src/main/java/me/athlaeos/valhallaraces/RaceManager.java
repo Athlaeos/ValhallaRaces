@@ -4,8 +4,10 @@ import me.athlaeos.valhallammo.ValhallaMMO;
 import me.athlaeos.valhallammo.managers.AccumulativeStatManager;
 import me.athlaeos.valhallammo.managers.PerkRewardsManager;
 import me.athlaeos.valhallammo.perkrewards.PerkReward;
+import me.athlaeos.valhallammo.statsources.AccumulativeStatSource;
 import me.athlaeos.valhallammo.statsources.EvEAccumulativeStatSource;
 import me.athlaeos.valhallaraces.config.ConfigManager;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -24,7 +26,7 @@ public class RaceManager {
     private static final NamespacedKey raceKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_race");
     private final Location default_spawnpoint;
 
-    private final Map<String, Race> registeredRaces = new HashMap<>();
+    private Map<String, Race> registeredRaces = new HashMap<>();
 
     public RaceManager(){
         YamlConfiguration config = ConfigManager.getInstance().getConfig("config.yml").get();
@@ -32,9 +34,18 @@ public class RaceManager {
     }
 
     public void loadRaces(){
+        registeredRaces = new HashMap<>();
         YamlConfiguration config = ConfigManager.getInstance().getConfig("races.yml").get();
         ConfigurationSection raceSection = config.getConfigurationSection("");
         if (raceSection != null){
+            for (String stat : AccumulativeStatManager.getInstance().getSources().keySet()){
+                Collection<AccumulativeStatSource> sources = AccumulativeStatManager.getInstance().getSources().get(stat);
+                for (AccumulativeStatSource source : new HashSet<>(sources)){
+                    if (source instanceof OffensiveRaceStatSource || source instanceof RaceStatSource){
+                        AccumulativeStatManager.getInstance().getSources().get(stat).remove(source);
+                    }
+                }
+            }
             for (String r : raceSection.getKeys(false)){
                 Location cityCenter = parseLocation(config.getString(r + ".city_coordinates", ""));
                 if (cityCenter == null) cityCenter = default_spawnpoint;
@@ -79,8 +90,13 @@ public class RaceManager {
                     for (String statType : statsSection.getKeys(false)){
                         double buff = config.getDouble(r + ".stat_buffs." + statType);
                         if (buff != 0){
-                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream().anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
-                                AccumulativeStatManager.getInstance().register(statType, new OffensiveRaceStatSource(r, buff));
+                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream()
+                                    .anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
+                                if (AccumulativeStatManager.getInstance().getAttackerStatPossessiveMap().getOrDefault(statType, false)){
+                                    AccumulativeStatManager.getInstance().register(statType, new OffensiveRaceStatSource(r, buff));
+                                } else {
+                                    AccumulativeStatManager.getInstance().register(statType, new DefensiveRaceStatSource(r, buff));
+                                }
                             } else {
                                 AccumulativeStatManager.getInstance().register(statType, new RaceStatSource(r, buff));
                             }
@@ -102,10 +118,6 @@ public class RaceManager {
     public Race getRace(Player p){
         if (p.getPersistentDataContainer().has(raceKey, PersistentDataType.STRING)){
             return registeredRaces.get(p.getPersistentDataContainer().get(raceKey, PersistentDataType.STRING));
-//            if (r == null) {
-//                setRace(p, null);
-//            }
-//            return r;
         }
         return null;
     }
@@ -125,7 +137,24 @@ public class RaceManager {
                 reward.execute(p);
             }
             for (String command : race.getCommands()){
-                ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
+                if (delayArg != null){
+                    try {
+                        int delay = Integer.parseInt(delayArg);
+                        ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
+                                ValhallaRaces.getPlugin(),
+                                () -> { ValhallaRaces.getPlugin().getServer().dispatchCommand(
+                                        ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
+                                                .replace("%player%", p.getName())
+                                                .replace("<delay:" + delayArg + ">", ""));
+                                }
+                                , delay);
+                    } catch (IllegalArgumentException ignored){
+                        ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
+                    }
+                } else {
+                    ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                }
             }
         }
     }
@@ -159,5 +188,12 @@ public class RaceManager {
             }
         }
         return null;
+    }
+
+    public void reload(){
+        manager = null;
+        ConfigManager.getInstance().getConfig("races.yml").reload();
+        ConfigManager.getInstance().getConfig("races.yml").save();
+        RaceManager.getInstance().loadRaces();
     }
 }
