@@ -1,14 +1,14 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.config.ConfigUpdater;
 import me.athlaeos.valhallaraces.commands.RacesCommand;
+import me.athlaeos.valhallaraces.config.ConfigUpdater;
 import me.athlaeos.valhallaraces.hooks.RacesPlaceholderExpansion;
 import me.athlaeos.valhallaraces.listener.PlayerPickRaceClassListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class ValhallaRaces extends JavaPlugin {
     private static ValhallaRaces plugin = null;
@@ -17,7 +17,7 @@ public final class ValhallaRaces extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
-        saveAndUpdateConfig("config.yml");
+        saveConfig("config.yml");
         saveConfig("races.yml");
         saveConfig("classes.yml");
 
@@ -61,7 +61,7 @@ public final class ValhallaRaces extends JavaPlugin {
     private void updateConfig(String name){
         File configFile = new File(getDataFolder(), name);
         try {
-            ConfigUpdater.update(plugin, name, configFile, new ArrayList<>());
+            ConfigUpdater.update(plugin, name, configFile, Arrays.asList("races_decoration", "classes_decoration"));
         } catch (IOException e) {
             e.printStackTrace();
         }

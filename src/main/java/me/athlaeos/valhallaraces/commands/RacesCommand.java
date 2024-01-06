@@ -12,10 +12,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class RacesCommand implements TabExecutor {
     public RacesCommand(){
@@ -76,20 +73,24 @@ public class RacesCommand implements TabExecutor {
                     return true;
                 }
             } else {
-                Player target = ValhallaRaces.getPlugin().getServer().getPlayer(args[2]);
-                if (target == null) {
-                    sender.sendMessage(Utils.chat("&cPlayer not found"));
+                Collection<Player> targets = Utils.selectPlayers(sender, args[2]);
+                if (targets.isEmpty()) {
+                    sender.sendMessage(Utils.chat("&cPlayer(s) not found"));
                     return true;
                 }
                 if (args[0].equalsIgnoreCase("reset")){
                     if (args[1].equalsIgnoreCase("race")){
-                        RaceManager.getInstance().setRace(target, null);
-                        new RacePickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
-                        sender.sendMessage(Utils.chat("&aRace reset&7, player is now picking different race"));
+                        for (Player target : targets){
+                            RaceManager.getInstance().setRace(target, null);
+                            new RacePickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
+                        }
+                        sender.sendMessage(Utils.chat("&aRace reset&7, player(s) are now picking different race"));
                         return true;
                     } else if (args[1].equalsIgnoreCase("class")) {
-                        ClassManager.getInstance().setClass(target, null);
-                        new ClassPickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
+                        for (Player target : targets){
+                            ClassManager.getInstance().setClass(target, null);
+                            new ClassPickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
+                        }
                         sender.sendMessage(Utils.chat("&aClass reset&7, player is now picking different class"));
                         return true;
                     }
@@ -101,7 +102,9 @@ public class RacesCommand implements TabExecutor {
                                 sender.sendMessage(Utils.chat("&cProvided race does not exist"));
                                 return true;
                             }
-                            RaceManager.getInstance().setRace(target, race);
+                            for (Player target : targets){
+                                RaceManager.getInstance().setRace(target, race);
+                            }
                             sender.sendMessage(Utils.chat("&aRace set&7, player is now a/an " + Utils.getItemName(race.getIcon())));
                             return true;
                         } else if (args[1].equalsIgnoreCase("class")) {
@@ -110,7 +113,9 @@ public class RacesCommand implements TabExecutor {
                                 sender.sendMessage(Utils.chat("&cProvided class does not exist"));
                                 return true;
                             }
-                            ClassManager.getInstance().setClass(target, playerClass);
+                            for (Player target : targets){
+                                ClassManager.getInstance().setClass(target, playerClass);
+                            }
                             sender.sendMessage(Utils.chat("&aClass set&7, player is now a/an " + Utils.getItemName(playerClass.getIcon())));
                             return true;
                         }
