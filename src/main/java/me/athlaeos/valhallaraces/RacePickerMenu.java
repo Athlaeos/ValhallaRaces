@@ -1,7 +1,9 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.menus.Menu;
-import me.athlaeos.valhallammo.menus.PlayerMenuUtility;
+import me.athlaeos.valhallammo.gui.Menu;
+import me.athlaeos.valhallammo.gui.PlayerMenuUtility;
+import me.athlaeos.valhallammo.item.ItemBuilder;
+import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallammo.utility.Utils;
 import me.athlaeos.valhallaraces.config.ConfigManager;
 import org.bukkit.Material;
@@ -16,46 +18,37 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 public class RacePickerMenu extends Menu {
-    private static final NamespacedKey raceIDKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_racebutton");
+    private static final NamespacedKey RACE_ID_KEY = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_racebutton");
     private static Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
-    private static String title = initializeTitle();
-    private static String warning = initializeWarningMessage();
-    private static String completed = initializeConfirmationMessage();
-    private static int slots = initializeGuiSize();
-    private Race preConfirmRace = null;
-    private boolean hasRacesAvailable = false;
+    private static String title = ConfigManager.getConfig("config.yml").get().getString("menus.races_title", "");
+    private static String completed = ConfigManager.getConfig("config.yml").get().getString("confirm_message_race");
+    private static int slots = Math.max(0, Math.min(54, ConfigManager.getConfig("config.yml").get().getInt("menus.races_slots", 54)));
+    private Race selectedRace = null;
+    private final Collection<Race> availableRaces = new HashSet<>();
 
     public static void reload(){
         decorativeItems = populateDecorativeItems();
-        title = initializeTitle();
-        warning = initializeWarningMessage();
-        completed = initializeConfirmationMessage();
-        slots = initializeGuiSize();
+        title = ConfigManager.getConfig("config.yml").get().getString("menus.races_title", "");
+        completed = ConfigManager.getConfig("config.yml").get().getString("confirm_message_race");
+        slots = Math.max(0, Math.min(54, ConfigManager.getConfig("config.yml").get().getInt("menus.races_slots", 54)));
     }
 
     public RacePickerMenu(PlayerMenuUtility playerMenuUtility) {
         super(playerMenuUtility);
-        for (Race r : RaceManager.getInstance().getRegisteredRaces().values()){
-            if (r.getPermissionRequired() != null){
-                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
-            }
+        for (Race r : RaceManager.getRegisteredRaces().values()){
+            if (r.getPermissionRequired() != null && !playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
             if (r.getGuiPosition() >= slots) continue;
+            if (ItemUtils.isEmpty(r.getIcon())) continue;
 
-            if (Utils.isItemEmptyOrNull(r.getIcon())) continue;
-            ItemStack icon = r.getIcon().clone();
-            ItemMeta iconMeta = icon.getItemMeta();
-            if (iconMeta == null) continue;
-            hasRacesAvailable = true;
-            break;
+
+            availableRaces.add(r);
         }
-    }
-
-    public boolean hasRacesAvailable() {
-        return hasRacesAvailable;
     }
 
     @Override
@@ -71,21 +64,25 @@ public class RacePickerMenu extends Menu {
     @Override
     public void handleMenu(InventoryClickEvent e) {
         e.setCancelled(true);
-        if (!decorativeItems.containsKey(e.getSlot())) {
-            Race clickedRace = getClickedRace(e.getCurrentItem());
-            if (clickedRace != null){
-                if (preConfirmRace == null || !preConfirmRace.equals(clickedRace)){
-                    preConfirmRace = clickedRace;
-                    setMenuItems();
-                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%race%", Utils.getItemName(clickedRace.getIcon()).trim()));
-                } else {
-                    RaceManager.getInstance().setRace(playerMenuUtility.getOwner(), clickedRace);
-                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%race%", Utils.getItemName(clickedRace.getIcon()).trim())));
-                    if (clickedRace.getCitySpawn() != null) playerMenuUtility.getOwner().teleport(clickedRace.getCitySpawn(), PlayerTeleportEvent.TeleportCause.PLUGIN);
-                    playerMenuUtility.getOwner().closeInventory();
-                }
-            }
+        ItemStack clicked = e.getCurrentItem();
+        if (ItemUtils.isEmpty(clicked)) return;
+        ItemMeta clickedMeta = ItemUtils.getItemMeta(clicked);
+        String clickedRace = clickedMeta.getPersistentDataContainer().get(RACE_ID_KEY, PersistentDataType.STRING);
+        if (clickedRace == null) {
+            if (!clickedMeta.getPersistentDataContainer().has(RaceManager.CONFIRM_BUTTON, PersistentDataType.INTEGER)) return;
+
+            if (selectedRace == null) return;
+            RaceManager.setRace(playerMenuUtility.getOwner(), selectedRace);
+            playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%race%", selectedRace.getDisplayName().trim())));
+            playerMenuUtility.getOwner().closeInventory();
+            if (selectedRace.getCitySpawn() != null) playerMenuUtility.getOwner().teleport(selectedRace.getCitySpawn(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+            return;
         }
+        Race selectedRace = RaceManager.getRegisteredRaces().get(clickedRace);
+        if (selectedRace == null) return;
+        this.selectedRace = selectedRace;
+
+        setMenuItems();
     }
 
     @Override
@@ -93,60 +90,30 @@ public class RacePickerMenu extends Menu {
         e.setCancelled(true);
     }
 
-    private Race getClickedRace(ItemStack i){
-        if (Utils.isItemEmptyOrNull(i)) return null;
-        ItemMeta iMeta = i.getItemMeta();
-        if (iMeta == null) return null;
-        if (iMeta.getPersistentDataContainer().has(raceIDKey, PersistentDataType.STRING)){
-            String value = iMeta.getPersistentDataContainer().get(raceIDKey, PersistentDataType.STRING);
-            if (value == null) return null;
-            return RaceManager.getInstance().getRegisteredRaces().get(value);
-        } else return null;
-    }
-
-    private void setItemName(ItemStack i, String name){
-        if (Utils.isItemEmptyOrNull(i)) return;
-        ItemMeta iMeta = i.getItemMeta();
-        if (iMeta == null) return;
-        iMeta.setDisplayName(Utils.chat(name));
-        i.setItemMeta(iMeta);
-    }
-
     @Override
     public void setMenuItems() {
         for (int deco : decorativeItems.keySet()){
-            if (deco < slots){
-                inventory.setItem(deco, decorativeItems.get(deco));
-            }
+            if (deco < slots) inventory.setItem(deco, decorativeItems.get(deco));
         }
 
-        for (Race r : RaceManager.getInstance().getRegisteredRaces().values()){
-            if (r.getPermissionRequired() != null){
-                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) {
-                    continue;
-                }
-            }
-            if (r.getGuiPosition() >= slots) {
-                continue;
-            }
-
-            if (Utils.isItemEmptyOrNull(r.getIcon())) {
-                continue;
-            }
+        for (Race r : RaceManager.getRegisteredRaces().values()){
+            if (r.getPermissionRequired() != null && !playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
+            if (r.getGuiPosition() >= slots) continue;
+            if (ItemUtils.isEmpty(r.getIcon())) continue;
             ItemStack icon = r.getIcon().clone();
             ItemMeta iconMeta = icon.getItemMeta();
-            if (iconMeta == null) {
-                continue;
-            }
+            if (iconMeta == null) continue;
+
             iconMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_POTION_EFFECTS);
-            iconMeta.getPersistentDataContainer().set(raceIDKey, PersistentDataType.STRING, r.getName());
+            iconMeta.getPersistentDataContainer().set(RACE_ID_KEY, PersistentDataType.STRING, r.getName());
             icon.setItemMeta(iconMeta);
             inventory.setItem(r.getGuiPosition(), icon);
         }
+        if (selectedRace != null) inventory.setItem(RaceManager.getConfirmButtonPosition(), RaceManager.getConfirmButton());
     }
 
     private static Map<Integer, ItemStack> populateDecorativeItems(){
-        YamlConfiguration config = ConfigManager.getInstance().getConfig("config.yml").get();
+        YamlConfiguration config = ConfigManager.getConfig("config.yml").get();
         Map<Integer, ItemStack> items = new HashMap<>();
         ConfigurationSection itemSection = config.getConfigurationSection("menus.races_decoration");
         if (itemSection != null){
@@ -160,7 +127,12 @@ public class RacePickerMenu extends Menu {
                         modelData = Integer.parseInt(args[1]);
                     }
                     int slot = Integer.parseInt(spot);
-                    items.put(slot, modelData >= 0 ? Utils.setCustomModelData(new ItemStack(material), modelData) : new ItemStack(material));
+                    items.put(slot, new ItemBuilder(material)
+                            .data(modelData)
+                            .name("&r")
+                            .flag(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_DYE)
+                            .get()
+                    );
                 } catch (IllegalArgumentException ignored){
                     ValhallaRaces.getPlugin().getServer().getLogger().warning("Invalid args given at menus.races_decoration." + spot);
                 }
@@ -169,19 +141,7 @@ public class RacePickerMenu extends Menu {
         return items;
     }
 
-    private static String initializeTitle(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("menus.races_title", "");
-    }
-
-    private static int initializeGuiSize(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getInt("menus.races_slots", 54);
-    }
-
-    private static String initializeWarningMessage(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("warning_message_race");
-    }
-
-    private static String initializeConfirmationMessage(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("confirm_message_race");
+    public Collection<Race> getAvailableRaces() {
+        return availableRaces;
     }
 }

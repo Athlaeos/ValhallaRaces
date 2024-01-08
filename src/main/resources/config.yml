@@ -4,10 +4,8 @@ pick_class: true # If true, the player will be forced to pick a class on joining
 on_join: false # If true, and if pick_race or pick_class are enabled, players will pick their class or race when they join the server.
 # IF FALSE, they get to pick when they first start moving instead.
 
-warning_message_race: '&cAre you sure you want to be a/an %race%&c?'
-warning_message_class: '&cAre you sure you want to be a/an %class%&c?'
-confirm_message_race: '&cYou are now a/an %race%!'
-confirm_message_class: '&cYou are now a/an %class%!'
+confirm_message_race: '&cYou are now a %race%!'
+confirm_message_class: '&cYou are now %class%!'
 
 menus:
   races_slots: 45

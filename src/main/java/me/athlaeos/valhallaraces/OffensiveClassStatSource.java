@@ -1,10 +1,13 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.statsources.EvEAccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.EvEAccumulativeStatSource;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-public class OffensiveClassStatSource extends EvEAccumulativeStatSource {
+import java.util.Collection;
+
+public class OffensiveClassStatSource implements AccumulativeStatSource, EvEAccumulativeStatSource {
     private final String classRequired;
     private final double value;
     public OffensiveClassStatSource(String classRequired, double value){
@@ -13,18 +16,16 @@ public class OffensiveClassStatSource extends EvEAccumulativeStatSource {
     }
 
     @Override
-    public double add(Entity entity, Entity entity1, boolean b) {
+    public double fetch(Entity entity, Entity entity1, boolean b) {
         if (entity1 instanceof Player){
-            Class playerClass = ClassManager.getInstance().getClass((Player) entity1);
-            if (playerClass != null){
-                if (playerClass.getName().equals(classRequired)) return value;
-            }
+            Collection<Class> classes = ClassManager.getClasses((Player) entity1).values();
+            if (classes.stream().anyMatch(c -> c.getName().equals(classRequired))) return value;
         }
         return 0;
     }
 
     @Override
-    public double add(Entity entity, boolean b) {
+    public double fetch(Entity entity, boolean b) {
         return 0;
     }
 }

@@ -1,6 +1,7 @@
 package me.athlaeos.valhallaraces.commands;
 
-import me.athlaeos.valhallammo.menus.PlayerMenuUtilManager;
+import me.athlaeos.valhallammo.gui.PlayerMenuUtilManager;
+import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallammo.utility.Utils;
 import me.athlaeos.valhallaraces.*;
 import me.athlaeos.valhallaraces.Class;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RacesCommand implements TabExecutor {
     public RacesCommand(){
@@ -28,44 +30,57 @@ public class RacesCommand implements TabExecutor {
         if (args.length == 0){
             sender.sendMessage(Utils.chat("&8&m              [&dValhalla&5Races &7by &dAthlaeos&8&m]              "));
         } else if (args.length >= 3){
-            if (args[0].equalsIgnoreCase("seticon")){
+            if (args[0].equalsIgnoreCase("seticon") || args[0].equalsIgnoreCase("setlockedicon")){
+                boolean setNormalIcon = args[0].equalsIgnoreCase("seticon");
                 if (sender instanceof Player){
                     ItemStack hand = ((Player) sender).getInventory().getItemInMainHand();
                     if (args[1].equalsIgnoreCase("race")){
-                        Race race = RaceManager.getInstance().getRegisteredRaces().get(args[2]);
+                        Race race = RaceManager.getRegisteredRaces().get(args[2]);
                         if (race == null) {
                             sender.sendMessage(Utils.chat("&cProvided race does not exist"));
                             return true;
                         }
-                        YamlConfiguration config = ConfigManager.getInstance().getConfig("races.yml").get();
-                        if (Utils.isItemEmptyOrNull(hand)){
+                        YamlConfiguration config = ConfigManager.getConfig("races.yml").get();
+                        if (ItemUtils.isEmpty(hand)){
                             sender.sendMessage(Utils.chat("&aRemoved true icon! Turned back to standard icon"));
                             race.setIcon(null);
                             config.set(race.getName() + ".true_icon", null);
                         } else {
+                            hand = hand.clone();
                             sender.sendMessage(Utils.chat("&aTrue icon set!"));
-                            race.setIcon(hand);
-                            config.set(race.getName() + ".true_icon", hand);
+                            if (setNormalIcon) {
+                                race.setIcon(hand);
+                                config.set(race.getName() + ".true_icon", hand);
+                            } else {
+                                race.setLockedIcon(hand);
+                                config.set(race.getName() + ".true_locked_icon", hand);
+                            }
                         }
-                        ConfigManager.getInstance().saveConfig("races.yml");
+                        ConfigManager.saveConfig("races.yml");
                         return true;
                     } else if (args[1].equalsIgnoreCase("class")) {
-                        Class playerClass = ClassManager.getInstance().getRegisteredClasses().get(args[2]);
+                        Class playerClass = ClassManager.getRegisteredClasses().get(args[2]);
                         if (playerClass == null) {
                             sender.sendMessage(Utils.chat("&cProvided class does not exist"));
                             return true;
                         }
-                        YamlConfiguration config = ConfigManager.getInstance().getConfig("classes.yml").get();
-                        if (Utils.isItemEmptyOrNull(hand)){
+                        YamlConfiguration config = ConfigManager.getConfig("classes.yml").get();
+                        if (ItemUtils.isEmpty(hand)){
                             sender.sendMessage(Utils.chat("&aRemoved true icon! Turned back to standard icon"));
                             playerClass.setIcon(null);
                             config.set(playerClass.getName() + ".true_icon", null);
                         } else {
+                            hand = hand.clone();
                             sender.sendMessage(Utils.chat("&aTrue icon set!"));
-                            playerClass.setIcon(hand);
-                            config.set(playerClass.getName() + ".true_icon", hand);
+                            if (setNormalIcon){
+                                playerClass.setIcon(hand);
+                                config.set(playerClass.getName() + ".true_icon", hand);
+                            } else {
+                                playerClass.setLockedIcon(hand);
+                                config.set(playerClass.getName() + ".true_locked_icon", hand);
+                            }
                         }
-                        ConfigManager.getInstance().saveConfig("classes.yml");
+                        ConfigManager.saveConfig("classes.yml");
                         return true;
                     }
                 } else {
@@ -81,52 +96,74 @@ public class RacesCommand implements TabExecutor {
                 if (args[0].equalsIgnoreCase("reset")){
                     if (args[1].equalsIgnoreCase("race")){
                         for (Player target : targets){
-                            RaceManager.getInstance().setRace(target, null);
-                            new RacePickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
+                            RaceManager.setRace(target, null);
+                            RacePickerMenu menu = new RacePickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(target));
+                            if (!menu.getAvailableRaces().isEmpty()) menu.open();
                         }
                         sender.sendMessage(Utils.chat("&aRace reset&7, player(s) are now picking different race"));
                         return true;
                     } else if (args[1].equalsIgnoreCase("class")) {
                         for (Player target : targets){
-                            ClassManager.getInstance().setClass(target, null);
-                            new ClassPickerMenu(PlayerMenuUtilManager.getInstance().getPlayerMenuUtility(target)).open();
+                            ClassManager.setClasses(target, null);
+                            ClassPickerMenu menu = new ClassPickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(target));
+                            if (!menu.getAvailableClasses().isEmpty()) menu.open();
                         }
                         sender.sendMessage(Utils.chat("&aClass reset&7, player is now picking different class"));
                         return true;
+                    } else if (args[1].equalsIgnoreCase("both")){
+                        for (Player target : targets){
+                            ClassManager.setClasses(target, null);
+                            RaceManager.setRace(target, null);
+                            RacePickerMenu menu = new RacePickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(target));
+                            if (!menu.getAvailableRaces().isEmpty()) menu.open();
+                        }
+                        sender.sendMessage(Utils.chat("&aRaces and classes reset&7, player is now picking different races and classes"));
+                        return true;
                     }
-                } else if (args[0].equalsIgnoreCase("set")){
+                } else if (args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("add")){
                     if (args.length >= 4){
                         if (args[1].equalsIgnoreCase("race")){
-                            Race race = RaceManager.getInstance().getRegisteredRaces().get(args[3]);
+                            Race race = RaceManager.getRegisteredRaces().get(args[3]);
                             if (race == null) {
                                 sender.sendMessage(Utils.chat("&cProvided race does not exist"));
                                 return true;
                             }
                             for (Player target : targets){
-                                RaceManager.getInstance().setRace(target, race);
+                                RaceManager.setRace(target, race);
                             }
-                            sender.sendMessage(Utils.chat("&aRace set&7, player is now a/an " + Utils.getItemName(race.getIcon())));
+                            sender.sendMessage(Utils.chat("&aRace set&7, player is now a/an " + ItemUtils.getItemName(ItemUtils.getItemMeta(race.getIcon()))));
                             return true;
                         } else if (args[1].equalsIgnoreCase("class")) {
-                            Class playerClass = ClassManager.getInstance().getRegisteredClasses().get(args[3]);
-                            if (playerClass == null) {
-                                sender.sendMessage(Utils.chat("&cProvided class does not exist"));
+                            String[] stringClasses = args[3].split(";");
+                            Collection<Class> classes = new HashSet<>();
+                            for (String c : stringClasses) {
+                                if (ClassManager.getRegisteredClasses().containsKey(c)) classes.add(ClassManager.getRegisteredClasses().get(c));
+                                else sender.sendMessage(Utils.chat("&cClass " + c + " does not exist"));
+                            }
+                            if (classes.isEmpty()) {
+                                sender.sendMessage(Utils.chat("&cNo valid classes given"));
                                 return true;
                             }
+                            boolean add = args[0].equalsIgnoreCase("add");
                             for (Player target : targets){
-                                ClassManager.getInstance().setClass(target, playerClass);
+                                if (add) {
+                                    Collection<Class> existingClasses = ClassManager.getClasses(target).values();
+                                    existingClasses.addAll(classes);
+                                    ClassManager.setClasses(target, existingClasses);
+                                } else ClassManager.setClasses(target, classes);
+
                             }
-                            sender.sendMessage(Utils.chat("&aClass set&7, player is now a/an " + Utils.getItemName(playerClass.getIcon())));
+                            sender.sendMessage(Utils.chat("&aClasses set&7, player(s) classes are now " + String.join(", ", stringClasses)));
                             return true;
                         }
                     }
                 }
             }
         } else if (args[0].equalsIgnoreCase("reload")){
-            ConfigManager.getInstance().getConfig("config.yml").reload();
-            ConfigManager.getInstance().getConfig("config.yml").save();
-            RaceManager.getInstance().reload();
-            ClassManager.getInstance().reload();
+            ConfigManager.getConfig("config.yml").reload();
+            ConfigManager.getConfig("config.yml").save();
+            RaceManager.reload();
+            ClassManager.reload();
             ValhallaRaces.getPlugin().getRacePickerListener().reload();
             ClassPickerMenu.reload();
             RacePickerMenu.reload();
@@ -144,20 +181,21 @@ public class RacesCommand implements TabExecutor {
             return Arrays.asList("reset", "set", "seticon", "reload");
         }
         if (args.length == 2){
-            return Arrays.asList("class", "race");
+            if (args[0].equalsIgnoreCase("reset")) return Arrays.asList("class", "race", "both");
+            else return Arrays.asList("class", "race");
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("seticon")){
             if (args[1].equalsIgnoreCase("class")){
-                return new ArrayList<>(ClassManager.getInstance().getRegisteredClasses().keySet());
+                return ClassManager.getRegisteredClasses().keySet().stream().map(c -> c + ";").distinct().collect(Collectors.toList());
             } else if (args[1].equalsIgnoreCase("race")) {
-                return new ArrayList<>(RaceManager.getInstance().getRegisteredRaces().keySet());
+                return new ArrayList<>(RaceManager.getRegisteredRaces().keySet());
             }
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("set")){
             if (args[1].equalsIgnoreCase("class")){
-                return new ArrayList<>(ClassManager.getInstance().getRegisteredClasses().keySet());
+                return new ArrayList<>(ClassManager.getRegisteredClasses().keySet());
             } else if (args[1].equalsIgnoreCase("race")) {
-                return new ArrayList<>(RaceManager.getInstance().getRegisteredRaces().keySet());
+                return new ArrayList<>(RaceManager.getRegisteredRaces().keySet());
             }
         }
         return null;

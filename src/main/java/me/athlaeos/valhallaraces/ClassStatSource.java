@@ -1,10 +1,12 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.statsources.AccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatSource;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-public class ClassStatSource extends AccumulativeStatSource {
+import java.util.Collection;
+
+public class ClassStatSource implements AccumulativeStatSource {
     private final String classRequired;
     private final double value;
     public ClassStatSource(String classRequired, double value){
@@ -13,14 +15,10 @@ public class ClassStatSource extends AccumulativeStatSource {
     }
 
     @Override
-    public double add(Entity entity, boolean b) {
+    public double fetch(Entity entity, boolean b) {
         if (entity instanceof Player){
-            Class playerClass = ClassManager.getInstance().getClass((Player) entity);
-            if (playerClass != null){
-                if (playerClass.getName().equals(classRequired)) {
-                    return value;
-                }
-            }
+            Collection<Class> classes = ClassManager.getClasses((Player) entity).values();
+            if (classes.stream().anyMatch(c -> c.getName().equals(classRequired))) return value;
         }
         return 0;
     }

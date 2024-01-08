@@ -1,10 +1,14 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.managers.AccumulativeStatManager;
-import me.athlaeos.valhallammo.managers.PerkRewardsManager;
-import me.athlaeos.valhallammo.perkrewards.PerkReward;
-import me.athlaeos.valhallammo.statsources.AccumulativeStatSource;
-import me.athlaeos.valhallammo.statsources.EvEAccumulativeStatSource;
+import me.athlaeos.valhallammo.dom.Catch;
+import me.athlaeos.valhallammo.item.ItemBuilder;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatManager;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.EvEAccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.StatCollector;
+import me.athlaeos.valhallammo.skills.perk_rewards.PerkReward;
+import me.athlaeos.valhallammo.skills.perk_rewards.PerkRewardRegistry;
+import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallaraces.config.ConfigManager;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Material;
@@ -17,152 +21,170 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClassManager {
-    private static ClassManager manager = null;
-    private static final NamespacedKey classKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_class");
+    private static final NamespacedKey CLASS_KEY = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_class");
+    public static final NamespacedKey CONFIRM_BUTTON = new NamespacedKey(ValhallaRaces.getPlugin(), "confirm_classes");
 
-    private Map<String, Class> registeredClasses = new HashMap<>();
+    private static final Map<UUID, Map<Integer, Class>> classCache = new HashMap<>();
 
-    public void loadClasses(){
+    private static Map<String, Class> registeredClasses = new HashMap<>();
+    private static ItemStack confirmButton = new ItemBuilder(Material.STRUCTURE_VOID).name("&aConfirm").data(-1).intTag(CONFIRM_BUTTON, 1).get();
+    private static int confirmButtonPosition = 40;
+
+    public static void loadClasses(){
         registeredClasses = new HashMap<>();
-        YamlConfiguration config = ConfigManager.getInstance().getConfig("classes.yml").get();
-        ConfigurationSection raceSection = config.getConfigurationSection("");
-        if (raceSection != null){
-            for (String stat : AccumulativeStatManager.getInstance().getSources().keySet()){
-                Collection<AccumulativeStatSource> sources = AccumulativeStatManager.getInstance().getSources().get(stat);
-                for (AccumulativeStatSource source : new HashSet<>(sources)){
-                    if (source instanceof OffensiveClassStatSource || source instanceof ClassStatSource){
-                        AccumulativeStatManager.getInstance().getSources().get(stat).remove(source);
-                    }
+        YamlConfiguration config = ConfigManager.getConfig("classes.yml").get();
+        confirmButton = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("confirm_button_type", "STRUCTURE_VOID:-1").split(":")[0]), Material.BOOK))
+                .name(config.getString("confirm_button_name", "&aConfirm Classes"))
+                .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("confirm_button_type", "STRUCTURE_VOID:-1").split(":")[1]), -1))
+                .lore(config.getStringList("confirm_button_lore"))
+                .intTag(CONFIRM_BUTTON, 1)
+                .get();
+        confirmButtonPosition = config.getInt("confirm_button_position", 40);
+        ConfigurationSection classSection = config.getConfigurationSection("classes");
+        if (classSection != null){
+            for (String stat : AccumulativeStatManager.getSources().keySet()){
+                StatCollector collector = AccumulativeStatManager.getSources().get(stat);
+                for (AccumulativeStatSource source : new HashSet<>(collector.getStatSources())){
+                    collector.getStatSources().remove(source);
                 }
             }
-            for (String r : raceSection.getKeys(false)){
-                ItemStack alternativeIcon = config.getItemStack(r + ".true_icon");
-                Material icon = Material.BOOK;
-                try {
-                    icon = Material.valueOf(config.getString(r + ".icon"));
-                } catch (IllegalArgumentException ignored){
+
+            for (String c : classSection.getKeys(false)){
+                int group = config.getInt("classes." + c + ".group");
+                ItemStack icon = config.getItemStack("classes." + c + ".true_icon");
+                if (ItemUtils.isEmpty(icon)){
+                    icon = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("classes." + c + ".icon", "BOOK:-1").split(":")[0]), Material.BOOK))
+                            .name(config.getString("classes." + c + ".display_name"))
+                            .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("classes." + c + ".icon", "-1").split(":")[1]), -1))
+                            .lore(config.getStringList("classes." + c + ".description"))
+                            .intTag(CONFIRM_BUTTON, 1)
+                            .get();
                 }
-                String iconDisplayName = config.getString(r + ".display_name");
-                String chatPrefix = config.getString(r + ".prefix");
-                int modelData = config.getInt(r + ".data");
-                int guiPosition = config.getInt(r + ".position");
-                List<String> description = config.getStringList(r + ".description");
-                List<String> commands = config.getStringList(r + ".commands");
-                List<String> limitToRaces = config.getStringList(r + ".race_filter");
+                ItemStack lockedIcon = config.getItemStack("classes." + c + ".true_locked_icon");
+                if (ItemUtils.isEmpty(lockedIcon)){
+                    lockedIcon = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("classes." + c + ".icon_locked", "BOOK:-1").split(":")[0]), Material.BOOK))
+                            .name(config.getString("classes." + c + ".display_name"))
+                            .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("classes." + c + ".icon_locked", "-1").split(":")[1]), -1))
+                            .lore(config.getStringList("classes." + c + ".description"))
+                            .intTag(CONFIRM_BUTTON, 1)
+                            .get();
+                }
+                String chatPrefix = config.getString("classes." + c + ".prefix");
+                int guiPosition = config.getInt("classes." + c + ".position");
+                List<String> commands = config.getStringList("classes." + c + ".commands");
+                List<String> limitToRaces = config.getStringList("classes." + c + ".race_filter");
 
                 Collection<PerkReward> perkRewards = new HashSet<>();
-                ConfigurationSection rewardSection = config.getConfigurationSection(r + ".perk_rewards");
+                ConfigurationSection rewardSection = config.getConfigurationSection("classes." + c + ".perk_rewards");
                 if (rewardSection != null){
                     for (String type : rewardSection.getKeys(false)){
-                        Object arg = config.get(r + ".perk_rewards." + type);
+                        Object arg = config.get("classes." + c + ".perk_rewards." + type);
                         if (arg == null) continue;
-                        PerkReward reward = PerkRewardsManager.getInstance().createReward(type, arg);
+                        PerkReward reward = PerkRewardRegistry.createReward(type, arg);
                         if (reward == null) continue;
                         perkRewards.add(reward);
                     }
                 }
 
-                ConfigurationSection statsSection = config.getConfigurationSection(r + ".stat_buffs");
+                ConfigurationSection statsSection = config.getConfigurationSection("classes." + c + ".stat_buffs");
                 if (statsSection != null){
                     for (String statType : statsSection.getKeys(false)){
-                        double buff = config.getDouble(r + ".stat_buffs." + statType);
+                        double buff = config.getDouble("classes." + c + ".stat_buffs." + statType);
                         if (buff != 0){
-                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream()
-                                    .anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
-                                if (AccumulativeStatManager.getInstance().getAttackerStatPossessiveMap().getOrDefault(statType, false)){
-                                    AccumulativeStatManager.getInstance().register(statType, new OffensiveClassStatSource(r, buff));
+                            StatCollector collector = AccumulativeStatManager.getSources().get(statType);
+                            if (collector == null) continue;
+
+                            if (collector.getStatSources().stream().anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
+                                if (collector.isAttackerPossessive()){
+                                    AccumulativeStatManager.register(statType, new OffensiveClassStatSource(c, buff));
                                 } else {
-                                    AccumulativeStatManager.getInstance().register(statType, new DefensiveClassStatSource(r, buff));
+                                    AccumulativeStatManager.register(statType, new DefensiveClassStatSource(c, buff));
                                 }
                             } else {
-                                AccumulativeStatManager.getInstance().register(statType, new ClassStatSource(r, buff));
+                                AccumulativeStatManager.register(statType, new ClassStatSource(c, buff));
                             }
                         }
                     }
                 }
 
-                Collection<PerkReward> antiPerkRewards = new HashSet<>();
-                ConfigurationSection antiRewardSection = config.getConfigurationSection(r + ".anti_perk_rewards");
-                if (antiRewardSection != null){
-                    for (String type : antiRewardSection.getKeys(false)){
-                        Object arg = config.get(r + ".anti_perk_rewards." + type);
-                        if (arg == null) continue;
-                        PerkReward reward = PerkRewardsManager.getInstance().createReward(type, arg);
-                        if (reward == null) continue;
-                        antiPerkRewards.add(reward);
-                    }
-                }
-
-                String permissionRequired = config.getString(r + ".permission");
+                String permissionRequired = config.getString("classes." + c + ".permission");
                 if (permissionRequired != null){
                     if (ValhallaRaces.getPlugin().getServer().getPluginManager().getPermission(permissionRequired) == null){
                         ValhallaRaces.getPlugin().getServer().getPluginManager().addPermission(new Permission(permissionRequired));
                     }
                 }
-                registeredClasses.put(r, new Class(r, iconDisplayName, chatPrefix, alternativeIcon, icon, modelData, guiPosition, limitToRaces, commands, description, permissionRequired, perkRewards, antiPerkRewards));
+                registeredClasses.put(c, new Class(c, chatPrefix, icon, lockedIcon, guiPosition, group, limitToRaces, commands, permissionRequired, perkRewards));
             }
         }
     }
 
-    public Class getClass(Player p){
-        if (p.getPersistentDataContainer().has(classKey, PersistentDataType.STRING)){
-            return registeredClasses.get(p.getPersistentDataContainer().get(classKey, PersistentDataType.STRING));
+    public static Map<Integer, Class> getClasses(Player p){
+        if (classCache.containsKey(p.getUniqueId())) return classCache.get(p.getUniqueId());
+        if (p.getPersistentDataContainer().has(CLASS_KEY, PersistentDataType.STRING)){
+            Collection<String> encodedClasses = Arrays.stream(p.getPersistentDataContainer().getOrDefault(CLASS_KEY, PersistentDataType.STRING, "").split(";")).collect(Collectors.toList());
+            if (encodedClasses.isEmpty()) return new HashMap<>();
+            Map<Integer, Class> classes = new HashMap<>();
+            encodedClasses.forEach(c -> {
+                Class playerClass = registeredClasses.get(c);
+                if (playerClass == null) return;
+                classes.put(playerClass.getGroup(), playerClass);
+            });
+            classCache.put(p.getUniqueId(), classes);
+            return classes;
         }
-        return null;
+        return new HashMap<>();
     }
 
-    public void setClass(Player p, Class playerClass){
-        Class existingClass = getClass(p);
-        if (existingClass != null){
-            for (PerkReward reward : existingClass.getAntiPerkRewards()){
-                reward.execute(p);
+    public static void setClasses(Player p, Collection<Class> classes){
+        Map<Integer, Class> existingClasses = getClasses(p);
+        for (Class c : existingClasses.values()){
+            for (PerkReward reward : c.getPerkRewards()){
+                reward.remove(p);
             }
         }
-        if (playerClass == null) {
-            p.getPersistentDataContainer().remove(classKey);
+        if (classes == null || classes.isEmpty()) {
+            p.getPersistentDataContainer().remove(CLASS_KEY);
         } else {
-            p.getPersistentDataContainer().set(classKey, PersistentDataType.STRING, playerClass.getName());
-            for (PerkReward reward : playerClass.getPerkRewards()){
-                reward.execute(p);
-            }
-            for (String command : playerClass.getCommands()){
-                String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
-                if (delayArg != null){
-                    try {
-                        int delay = Integer.parseInt(delayArg);
-                        ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
-                                ValhallaRaces.getPlugin(),
-                                () -> { ValhallaRaces.getPlugin().getServer().dispatchCommand(
-                                        ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
-                                                .replace("%player%", p.getName())
-                                                .replace("<delay:" + delayArg + ">", ""));
-                                }
-                                , delay);
-                    } catch (IllegalArgumentException ignored){
-                        ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
+            p.getPersistentDataContainer().set(CLASS_KEY, PersistentDataType.STRING, classes.stream().map(Class::getName).collect(Collectors.joining(";")));
+            for (Class c : classes){
+                for (PerkReward reward : c.getPerkRewards()){
+                    reward.apply(p);
+                }
+                for (String command : c.getCommands()){
+                    String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
+                    if (delayArg != null){
+                        try {
+                            int delay = Integer.parseInt(delayArg);
+                            ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
+                                    ValhallaRaces.getPlugin(),
+                                    () -> ValhallaRaces.getPlugin().getServer().dispatchCommand(
+                                            ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
+                                                    .replace("%player%", p.getName())
+                                                    .replace("<delay:" + delayArg + ">", ""))
+                                    , delay);
+                        } catch (IllegalArgumentException ignored){
+                            ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
+                        }
+                    } else {
+                        ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
                     }
-                } else {
-                    ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
                 }
             }
         }
+        classCache.remove(p.getUniqueId());
     }
 
-    public Map<String, Class> getRegisteredClasses() {
-        return registeredClasses;
+    public static Map<String, Class> getRegisteredClasses() { return registeredClasses; }
+
+    public static void reload(){
+        ConfigManager.getConfig("classes.yml").reload();
+        ConfigManager.getConfig("classes.yml").save();
+        loadClasses();
     }
 
-    public static ClassManager getInstance(){
-        if (manager == null) manager = new ClassManager();
-        return manager;
-    }
-
-    public void reload(){
-        manager = null;
-        ConfigManager.getInstance().getConfig("classes.yml").reload();
-        ConfigManager.getInstance().getConfig("classes.yml").save();
-        ClassManager.getInstance().loadClasses();
-    }
+    public static int getConfirmButtonPosition() { return confirmButtonPosition; }
+    public static ItemStack getConfirmButton() { return confirmButton; }
 }

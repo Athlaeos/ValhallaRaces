@@ -21,8 +21,8 @@ public final class ValhallaRaces extends JavaPlugin {
         saveConfig("races.yml");
         saveConfig("classes.yml");
 
-        RaceManager.getInstance().loadRaces();
-        ClassManager.getInstance().loadClasses();
+        RaceManager.loadRaces();
+        ClassManager.loadClasses();
         new RacesCommand();
 
         racePickerListener = new PlayerPickRaceClassListener();

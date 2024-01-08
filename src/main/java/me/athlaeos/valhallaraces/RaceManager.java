@@ -1,11 +1,14 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.ValhallaMMO;
-import me.athlaeos.valhallammo.managers.AccumulativeStatManager;
-import me.athlaeos.valhallammo.managers.PerkRewardsManager;
-import me.athlaeos.valhallammo.perkrewards.PerkReward;
-import me.athlaeos.valhallammo.statsources.AccumulativeStatSource;
-import me.athlaeos.valhallammo.statsources.EvEAccumulativeStatSource;
+import me.athlaeos.valhallammo.dom.Catch;
+import me.athlaeos.valhallammo.item.ItemBuilder;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatManager;
+import me.athlaeos.valhallammo.playerstats.AccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.EvEAccumulativeStatSource;
+import me.athlaeos.valhallammo.playerstats.StatCollector;
+import me.athlaeos.valhallammo.skills.perk_rewards.PerkReward;
+import me.athlaeos.valhallammo.skills.perk_rewards.PerkRewardRegistry;
+import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallaraces.config.ConfigManager;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
@@ -22,111 +25,108 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.*;
 
 public class RaceManager {
-    private static RaceManager manager = null;
     private static final NamespacedKey raceKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_race");
-    private final Location default_spawnpoint;
+    public static final NamespacedKey CONFIRM_BUTTON = new NamespacedKey(ValhallaRaces.getPlugin(), "confirm_classes");
+    private static Location defaultSpawnpoint = null;
 
-    private Map<String, Race> registeredRaces = new HashMap<>();
+    private static final Map<String, Race> registeredRaces = new HashMap<>();
+    private static ItemStack confirmButton = new ItemBuilder(Material.STRUCTURE_VOID).name("&aConfirm").data(-1).intTag(CONFIRM_BUTTON, 1).get();
+    private static int confirmButtonPosition = 40;
 
-    public RaceManager(){
-        YamlConfiguration config = ConfigManager.getInstance().getConfig("config.yml").get();
-        default_spawnpoint = parseLocation(config.getString("default_spawnpoint", ""));
-    }
-
-    public void loadRaces(){
-        registeredRaces = new HashMap<>();
-        YamlConfiguration config = ConfigManager.getInstance().getConfig("races.yml").get();
-        ConfigurationSection raceSection = config.getConfigurationSection("");
+    public static void loadRaces(){
+        YamlConfiguration config = ConfigManager.getConfig("races.yml").get();
+        confirmButton = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("confirm_button_type", "STRUCTURE_VOID:-1").split(":")[0]), Material.BOOK))
+                .name(config.getString("confirm_button_name", "&aConfirm Classes"))
+                .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("confirm_button_type", "STRUCTURE_VOID:-1").split(":")[1]), -1))
+                .lore(config.getStringList("confirm_button_lore"))
+                .intTag(CONFIRM_BUTTON, 1)
+                .get();
+        confirmButtonPosition = config.getInt("confirm_button_position", 40);
+        defaultSpawnpoint = parseLocation(config.getString("default_spawnpoint", ""));
+        ConfigurationSection raceSection = config.getConfigurationSection("races");
         if (raceSection != null){
-            for (String stat : AccumulativeStatManager.getInstance().getSources().keySet()){
-                Collection<AccumulativeStatSource> sources = AccumulativeStatManager.getInstance().getSources().get(stat);
-                for (AccumulativeStatSource source : new HashSet<>(sources)){
-                    if (source instanceof OffensiveRaceStatSource || source instanceof RaceStatSource){
-                        AccumulativeStatManager.getInstance().getSources().get(stat).remove(source);
-                    }
+            for (String stat : AccumulativeStatManager.getSources().keySet()){
+                StatCollector collector = AccumulativeStatManager.getSources().get(stat);
+                for (AccumulativeStatSource source : new HashSet<>(collector.getStatSources())){
+                    collector.getStatSources().remove(source);
                 }
             }
             for (String r : raceSection.getKeys(false)){
-                Location cityCenter = parseLocation(config.getString(r + ".city_coordinates", ""));
-                if (cityCenter == null) cityCenter = default_spawnpoint;
-                ItemStack alternativeIcon = config.getItemStack(r + ".true_icon");
-                Material icon = Material.BOOK;
-                try {
-                    icon = Material.valueOf(config.getString(r + ".icon"));
-                } catch (IllegalArgumentException ignored){
+                Location cityCenter = parseLocation(config.getString("races." + r + ".city_coordinates", ""));
+                if (cityCenter == null) cityCenter = defaultSpawnpoint;
+                ItemStack icon = config.getItemStack("races." + r + ".true_icon");
+                if (ItemUtils.isEmpty(icon)){
+                    icon = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("races." + r + ".icon", "BOOK:-1").split(":")[0]), Material.BOOK))
+                            .name(config.getString("races." + r + ".display_name"))
+                            .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("races." + r + ".icon", "-1").split(":")[1]), -1))
+                            .lore(config.getStringList("races." + r + ".description"))
+                            .intTag(CONFIRM_BUTTON, 1)
+                            .get();
                 }
-                String iconDisplayName = config.getString(r + ".display_name");
-                String chatPrefix = config.getString(r + ".prefix");
-                int modelData = config.getInt(r + ".data");
-                int guiPosition = config.getInt(r + ".position");
-                List<String> description = config.getStringList(r + ".description");
-                List<String> commands = config.getStringList(r + ".commands");
+                ItemStack lockedIcon = config.getItemStack("races." + r + ".true_icon");
+                if (ItemUtils.isEmpty(lockedIcon)){
+                    lockedIcon = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("races." + r + ".icon_locked", "BOOK:-1").split(":")[0]), Material.BOOK))
+                            .name(config.getString("races." + r + ".display_name"))
+                            .data(Catch.catchOrElse(() -> Integer.parseInt(config.getString("races." + r + ".icon_locked", "-1").split(":")[1]), -1))
+                            .lore(config.getStringList("races." + r + ".description"))
+                            .intTag(CONFIRM_BUTTON, 1)
+                            .get();
+                }
+                String chatPrefix = config.getString("races." + r + ".prefix");
+                int guiPosition = config.getInt("races." + r + ".position");
+                List<String> commands = config.getStringList("races." + r + ".commands");
                 Collection<PerkReward> perkRewards = new HashSet<>();
-                ConfigurationSection rewardSection = config.getConfigurationSection(r + ".perk_rewards");
+                ConfigurationSection rewardSection = config.getConfigurationSection("races." + r + ".perk_rewards");
                 if (rewardSection != null){
                     for (String type : rewardSection.getKeys(false)){
-                        Object arg = config.get(r + ".perk_rewards." + type);
+                        Object arg = config.get("races." + r + ".perk_rewards." + type);
                         if (arg == null) continue;
-                        PerkReward reward = PerkRewardsManager.getInstance().createReward(type, arg);
+                        PerkReward reward = PerkRewardRegistry.createReward(type, arg);
                         if (reward == null) continue;
                         perkRewards.add(reward);
                     }
                 }
 
-                Collection<PerkReward> antiPerkRewards = new HashSet<>();
-                ConfigurationSection antiRewardSection = config.getConfigurationSection(r + ".anti_perk_rewards");
-                if (antiRewardSection != null){
-                    for (String type : antiRewardSection.getKeys(false)){
-                        Object arg = config.get(r + ".anti_perk_rewards." + type);
-                        if (arg == null) continue;
-                        PerkReward reward = PerkRewardsManager.getInstance().createReward(type, arg);
-                        if (reward == null) continue;
-                        antiPerkRewards.add(reward);
-                    }
-                }
-
-                ConfigurationSection statsSection = config.getConfigurationSection(r + ".stat_buffs");
+                ConfigurationSection statsSection = config.getConfigurationSection("races." + r + ".stat_buffs");
                 if (statsSection != null){
                     for (String statType : statsSection.getKeys(false)){
-                        double buff = config.getDouble(r + ".stat_buffs." + statType);
+                        double buff = config.getDouble("races." + r + ".stat_buffs." + statType);
                         if (buff != 0){
-                            if (AccumulativeStatManager.getInstance().getSources().getOrDefault(statType, new HashSet<>()).stream()
-                                    .anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
-                                if (AccumulativeStatManager.getInstance().getAttackerStatPossessiveMap().getOrDefault(statType, false)){
-                                    AccumulativeStatManager.getInstance().register(statType, new OffensiveRaceStatSource(r, buff));
+                            StatCollector collector = AccumulativeStatManager.getSources().get(statType);
+                            if (collector == null) continue;
+                            if (collector.getStatSources().stream().anyMatch(source -> source instanceof EvEAccumulativeStatSource)){
+                                if (collector.isAttackerPossessive()){
+                                    AccumulativeStatManager.register(statType, new OffensiveRaceStatSource(r, buff));
                                 } else {
-                                    AccumulativeStatManager.getInstance().register(statType, new DefensiveRaceStatSource(r, buff));
+                                    AccumulativeStatManager.register(statType, new DefensiveRaceStatSource(r, buff));
                                 }
                             } else {
-                                AccumulativeStatManager.getInstance().register(statType, new RaceStatSource(r, buff));
+                                AccumulativeStatManager.register(statType, new RaceStatSource(r, buff));
                             }
                         }
                     }
                 }
 
-                String permissionRequired = config.getString(r + ".permission");
+                String permissionRequired = config.getString("races." + r + ".permission");
                 if (permissionRequired != null){
                     if (ValhallaRaces.getPlugin().getServer().getPluginManager().getPermission(permissionRequired) == null){
                         ValhallaRaces.getPlugin().getServer().getPluginManager().addPermission(new Permission(permissionRequired));
                     }
                 }
-                registeredRaces.put(r, new Race(r, iconDisplayName, chatPrefix, cityCenter, icon, alternativeIcon, modelData, guiPosition, description, permissionRequired, commands, perkRewards, antiPerkRewards));
+                registeredRaces.put(r, new Race(r, chatPrefix, cityCenter, icon, lockedIcon, guiPosition, permissionRequired, commands, perkRewards));
             }
         }
     }
 
-    public Race getRace(Player p){
-        if (p.getPersistentDataContainer().has(raceKey, PersistentDataType.STRING)){
-            return registeredRaces.get(p.getPersistentDataContainer().get(raceKey, PersistentDataType.STRING));
-        }
-        return null;
+    public static Race getRace(Player p){
+        return registeredRaces.get(p.getPersistentDataContainer().get(raceKey, PersistentDataType.STRING));
     }
 
-    public void setRace(Player p, Race race){
+    public static void setRace(Player p, Race race){
         Race existingRace = getRace(p);
         if (existingRace != null){
-            for (PerkReward reward : existingRace.getAntiPerkRewards()){
-                reward.execute(p);
+            for (PerkReward reward : existingRace.getPerkRewards()){
+                reward.remove(p);
             }
         }
         if (race == null) {
@@ -134,7 +134,7 @@ public class RaceManager {
         } else {
             p.getPersistentDataContainer().set(raceKey, PersistentDataType.STRING, race.getName());
             for (PerkReward reward : race.getPerkRewards()){
-                reward.execute(p);
+                reward.apply(p);
             }
             for (String command : race.getCommands()){
                 String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
@@ -159,16 +159,9 @@ public class RaceManager {
         }
     }
 
-    public static RaceManager getInstance(){
-        if (manager == null) manager = new RaceManager();
-        return manager;
-    }
+    public static Map<String, Race> getRegisteredRaces() { return registeredRaces; }
 
-    public Map<String, Race> getRegisteredRaces() {
-        return registeredRaces;
-    }
-
-    private Location parseLocation(String locationString){
+    private static Location parseLocation(String locationString){
         if (locationString == null) return null;
         String[] args = locationString.split(",");
         if (args.length >= 3){
@@ -178,9 +171,9 @@ public class RaceManager {
                 double y = Double.parseDouble(args[2 - (args.length == 3 ? 1 : 0)]);
                 double z = Double.parseDouble(args[3 - (args.length == 3 ? 1 : 0)]);
                 if (args.length == 4){
-                    w = ValhallaMMO.getPlugin().getServer().getWorld(args[0]);
+                    w = ValhallaRaces.getPlugin().getServer().getWorld(args[0]);
                 } else {
-                    w = ValhallaMMO.getPlugin().getServer().getWorlds().get(0);
+                    w = ValhallaRaces.getPlugin().getServer().getWorlds().get(0);
                 }
                 if (w == null) return null;
                 return new Location(w, x, y, z);
@@ -190,10 +183,13 @@ public class RaceManager {
         return null;
     }
 
-    public void reload(){
-        manager = null;
-        ConfigManager.getInstance().getConfig("races.yml").reload();
-        ConfigManager.getInstance().getConfig("races.yml").save();
-        RaceManager.getInstance().loadRaces();
+    public static void reload(){
+        ConfigManager.getConfig("races.yml").reload();
+        ConfigManager.getConfig("races.yml").save();
+        RaceManager.loadRaces();
     }
+
+    public static int getConfirmButtonPosition() { return confirmButtonPosition; }
+    public static ItemStack getConfirmButton() { return confirmButton; }
+    public static Location getDefaultSpawnpoint() { return defaultSpawnpoint; }
 }
