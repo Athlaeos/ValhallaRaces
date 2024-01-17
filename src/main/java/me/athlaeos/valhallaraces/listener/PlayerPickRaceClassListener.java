@@ -1,6 +1,7 @@
 package me.athlaeos.valhallaraces.listener;
 
 import me.athlaeos.valhallammo.event.ValhallaUpdatedStatsEvent;
+import me.athlaeos.valhallammo.gui.Menu;
 import me.athlaeos.valhallammo.gui.PlayerMenuUtilManager;
 import me.athlaeos.valhallammo.skills.perk_rewards.PerkReward;
 import me.athlaeos.valhallaraces.*;
@@ -35,13 +36,13 @@ public class PlayerPickRaceClassListener implements Listener {
         if (forcePickRace){
             if (RaceManager.getRace(e.getPlayer()) == null){
                 RacePickerMenu menu = new RacePickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(e.getPlayer()));
-                if (menu.getAvailableRaces().isEmpty()) return;
+                if (menu.getAvailableRaces().isEmpty() || e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                 ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
                 return;
             } else if (forcePickClass){
                 if (ClassManager.getClasses(e.getPlayer()).isEmpty()){
                     ClassPickerMenu menu = new ClassPickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(e.getPlayer()));
-                    if (menu.getAvailableClasses().isEmpty()) return;
+                    if (menu.getAvailableClasses().isEmpty() || e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                     ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
                     return;
                 }
@@ -50,20 +51,10 @@ public class PlayerPickRaceClassListener implements Listener {
         if (forcePickClass){
             if (ClassManager.getClasses(e.getPlayer()).isEmpty()){
                 ClassPickerMenu menu = new ClassPickerMenu(PlayerMenuUtilManager.getPlayerMenuUtility(e.getPlayer()));
-                if (menu.getAvailableClasses().isEmpty()) return;
+                if (menu.getAvailableClasses().isEmpty() || e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                 ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
             }
         }
-    }
-
-    @EventHandler
-    public void onValhallaLoadStats(ValhallaUpdatedStatsEvent e){
-        for (Class c : ClassManager.getClasses(e.getPlayer()).values()){
-            for (PerkReward reward : c.getPerkRewards()) reward.apply(e.getPlayer());
-        }
-        Race race = RaceManager.getRace(e.getPlayer());
-        if (race == null) return;
-        for (PerkReward reward : race.getPerkRewards()) reward.apply(e.getPlayer());
     }
 
     private final Collection<UUID> excludedFromRaceSelection = new HashSet<>();
@@ -81,6 +72,7 @@ public class PlayerPickRaceClassListener implements Listener {
                         excludedFromRaceSelection.add(e.getPlayer().getUniqueId());
                         return;
                     }
+                    if (e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                     ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
                     return;
                 } else if (forcePickClass && !excludedFromClassSelection.contains(e.getPlayer().getUniqueId())){
@@ -90,6 +82,7 @@ public class PlayerPickRaceClassListener implements Listener {
                             excludedFromClassSelection.add(e.getPlayer().getUniqueId());
                             return;
                         }
+                        if (e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                         ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
                         return;
                     }
@@ -102,6 +95,7 @@ public class PlayerPickRaceClassListener implements Listener {
                         excludedFromClassSelection.add(e.getPlayer().getUniqueId());
                         return;
                     }
+                    if (e.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof Menu) return;
                     ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(ValhallaRaces.getPlugin(), menu::open, 20L);
                 }
             }

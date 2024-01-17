@@ -48,6 +48,7 @@ public class RaceManager {
             for (String stat : AccumulativeStatManager.getSources().keySet()){
                 StatCollector collector = AccumulativeStatManager.getSources().get(stat);
                 for (AccumulativeStatSource source : new HashSet<>(collector.getStatSources())){
+                    if (!(source instanceof RaceSource)) continue;
                     collector.getStatSources().remove(source);
                 }
             }
@@ -133,9 +134,6 @@ public class RaceManager {
             p.getPersistentDataContainer().remove(raceKey);
         } else {
             p.getPersistentDataContainer().set(raceKey, PersistentDataType.STRING, race.getName());
-            for (PerkReward reward : race.getPerkRewards()){
-                reward.apply(p);
-            }
             for (String command : race.getCommands()){
                 String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
                 if (delayArg != null){

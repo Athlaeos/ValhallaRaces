@@ -5,7 +5,7 @@ import me.athlaeos.valhallammo.playerstats.EvEAccumulativeStatSource;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-public class OffensiveRaceStatSource implements AccumulativeStatSource, EvEAccumulativeStatSource {
+public class OffensiveRaceStatSource implements AccumulativeStatSource, EvEAccumulativeStatSource, RaceSource {
     private final String raceRequired;
     private final double value;
     public OffensiveRaceStatSource(String raceRequired, double value){

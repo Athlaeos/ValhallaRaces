@@ -4,7 +4,7 @@ import me.athlaeos.valhallammo.playerstats.AccumulativeStatSource;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-public class RaceStatSource implements AccumulativeStatSource {
+public class RaceStatSource implements AccumulativeStatSource, RaceSource {
     private final String raceRequired;
     private final double value;
     public RaceStatSource(String raceRequired, double value){
@@ -16,7 +16,9 @@ public class RaceStatSource implements AccumulativeStatSource {
     public double fetch(Entity entity, boolean b) {
         if (entity instanceof Player){
             Race race = RaceManager.getRace((Player) entity);
-            if (race != null && race.getName().equals(raceRequired)) return value;
+            if (race != null && race.getName().equals(raceRequired)) {
+                return value;
+            }
         }
         return 0;
     }

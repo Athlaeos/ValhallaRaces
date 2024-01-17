@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Collection;
 
-public class ClassStatSource implements AccumulativeStatSource {
+public class ClassStatSource implements AccumulativeStatSource, ClassSource {
     private final String classRequired;
     private final double value;
     public ClassStatSource(String classRequired, double value){

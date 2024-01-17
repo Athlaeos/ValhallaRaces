@@ -48,6 +48,7 @@ public class ClassManager {
             for (String stat : AccumulativeStatManager.getSources().keySet()){
                 StatCollector collector = AccumulativeStatManager.getSources().get(stat);
                 for (AccumulativeStatSource source : new HashSet<>(collector.getStatSources())){
+                    if (!(source instanceof ClassSource)) continue;
                     collector.getStatSources().remove(source);
                 }
             }
@@ -150,9 +151,6 @@ public class ClassManager {
         } else {
             p.getPersistentDataContainer().set(CLASS_KEY, PersistentDataType.STRING, classes.stream().map(Class::getName).collect(Collectors.joining(";")));
             for (Class c : classes){
-                for (PerkReward reward : c.getPerkRewards()){
-                    reward.apply(p);
-                }
                 for (String command : c.getCommands()){
                     String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
                     if (delayArg != null){

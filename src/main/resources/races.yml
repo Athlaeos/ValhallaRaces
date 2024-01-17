@@ -27,9 +27,9 @@ races:
       - '&7But suffer from'
       - '&f- &c-15% &fMovement Speed'
     stat_buffs: # Stat buffs the race provides
-      MINING_EXP_GAIN_GENERAL: 20
-      SMITHING_EXP_GAIN_GENERAL: 20
-      HEAVY_WEAPONS_EXP_GAIN: 20
+      MINING_EXP_GAIN: 0.2
+      SMITHING_EXP_GAIN_GENERAL: 0.2
+      HEAVY_WEAPONS_EXP_GAIN: 0.2
       EXPLOSION_RESISTANCE: 0.4
       MELEE_RESISTANCE: 0.15
       HEALTH_BONUS: 4
@@ -86,9 +86,9 @@ races:
       - '&7But suffer from'
       - '&f- &c-4 Maximum Health'
     stat_buffs:
-      ENCHANTING_EXP_GAIN: 20
-      ARCHERY_EXP_GAIN: 20
-      LIGHT_WEAPONS_EXP_GAIN: 20
+      ENCHANTING_EXP_GAIN: 0.2
+      ARCHERY_EXP_GAIN: 0.2
+      LIGHT_WEAPONS_EXP_GAIN: 0.2
       MAGIC_RESISTANCE: 0.25
       FALLING_RESISTANCE: 0.5
       MOVEMENT_SPEED_BONUS: 0.1

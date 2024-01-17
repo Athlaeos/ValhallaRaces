@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Collection;
 
-public class OffensiveClassStatSource implements AccumulativeStatSource, EvEAccumulativeStatSource {
+public class OffensiveClassStatSource implements AccumulativeStatSource, EvEAccumulativeStatSource, ClassSource {
     private final String classRequired;
     private final double value;
     public OffensiveClassStatSource(String classRequired, double value){

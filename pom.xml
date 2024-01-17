@@ -13,7 +13,7 @@
 
     <description>Hooks into ValhallaMMO to implement races, each with their own buffs and features</description>
     <properties>
-        <revision>v1.0-beta</revision>
+        <revision>1.0-beta</revision>
 
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
