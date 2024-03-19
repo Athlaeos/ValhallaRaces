@@ -6,14 +6,14 @@
 
     <groupId>me.athlaeos</groupId>
     <artifactId>valhallaraces</artifactId>
-    <version>1.0</version>
+    <version>2.0</version>
     <packaging>jar</packaging>
 
     <name>ValhallaRaces</name>
 
     <description>Hooks into ValhallaMMO to implement races, each with their own buffs and features</description>
     <properties>
-        <revision>1.0-beta</revision>
+        <revision>2.0</revision>
 
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

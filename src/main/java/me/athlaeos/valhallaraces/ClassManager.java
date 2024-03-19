@@ -54,7 +54,7 @@ public class ClassManager {
             }
 
             for (String c : classSection.getKeys(false)){
-                int group = config.getInt("classes." + c + ".group");
+                int group = config.getInt("classes." + c + ".group", 1);
                 ItemStack icon = config.getItemStack("classes." + c + ".true_icon");
                 if (ItemUtils.isEmpty(icon)){
                     icon = new ItemBuilder(Catch.catchOrElse(() -> Material.valueOf(config.getString("classes." + c + ".icon", "BOOK:-1").split(":")[0]), Material.BOOK))
