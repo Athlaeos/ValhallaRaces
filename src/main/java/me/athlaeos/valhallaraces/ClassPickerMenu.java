@@ -1,7 +1,10 @@
 package me.athlaeos.valhallaraces;
 
-import me.athlaeos.valhallammo.menus.Menu;
-import me.athlaeos.valhallammo.menus.PlayerMenuUtility;
+import me.athlaeos.valhallammo.dom.Catch;
+import me.athlaeos.valhallammo.gui.Menu;
+import me.athlaeos.valhallammo.gui.PlayerMenuUtility;
+import me.athlaeos.valhallammo.item.ItemBuilder;
+import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallammo.utility.Utils;
 import me.athlaeos.valhallaraces.config.ConfigManager;
 import org.bukkit.Material;
@@ -10,56 +13,50 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClassPickerMenu extends Menu {
-    private static final NamespacedKey classIDKey = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_classbutton");
+    private static final NamespacedKey CLASS_ID_KEY = new NamespacedKey(ValhallaRaces.getPlugin(), "valhallaraces_classbutton");
     private static Map<Integer, ItemStack> decorativeItems = populateDecorativeItems();
-    private static String title = initializeTitle();
-    private static String warning = initializeWarningMessage();
-    private static String completed = initializeConfirmationMessage();
-    private static int slots = initializeGuiSize();
-    private Class preConfirmClass = null;
-    boolean hasClassesAvailable = false;
+    private static String title = ConfigManager.getConfig("config.yml").get().getString("menus.classes_title", "");
+    private static String completed = ConfigManager.getConfig("config.yml").get().getString("confirm_message_class");
+    private static int slots = ConfigManager.getConfig("config.yml").get().getInt("menus.classes_slots", 54);
+    private final Map<Integer, Class> pickedClasses = new HashMap<>();
+    private final Map<Integer, Collection<Class>> pickableClasses = new HashMap<>();
 
     public static void reload(){
         decorativeItems = populateDecorativeItems();
-        title = initializeTitle();
-        warning = initializeWarningMessage();
-        completed = initializeConfirmationMessage();
-        slots = initializeGuiSize();
+        title = ConfigManager.getConfig("config.yml").get().getString("menus.classes_title", "");
+        completed = ConfigManager.getConfig("config.yml").get().getString("confirm_message_class");
+        slots = ConfigManager.getConfig("config.yml").get().getInt("menus.classes_slots", 54);
     }
 
     public ClassPickerMenu(PlayerMenuUtility playerMenuUtility) {
         super(playerMenuUtility);
-        for (Class r : ClassManager.getInstance().getRegisteredClasses().values()){
-            if (r.getPermissionRequired() != null){
-                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
+        for (Class c : ClassManager.getRegisteredClasses().values()){
+            if (c.getPermissionRequired() != null && !playerMenuUtility.getOwner().hasPermission(c.getPermissionRequired())) continue;
+            if (!c.getLimitedToRaces().isEmpty()){
+                Race race = RaceManager.getRace(playerMenuUtility.getOwner());
+                if (race == null || !c.getLimitedToRaces().contains(race.getName())) continue;
             }
-            if (!r.getLimitedToRaces().isEmpty()){
-                Race race = RaceManager.getInstance().getRace(playerMenuUtility.getOwner());
-                if (race == null || !r.getLimitedToRaces().contains(race.getName())) continue;
-            }
-            if (r.getGuiPosition() >= slots) continue;
-
-            if (Utils.isItemEmptyOrNull(r.getIcon())) continue;
-            ItemStack icon = r.getIcon().clone();
-            ItemMeta iconMeta = icon.getItemMeta();
-            if (iconMeta == null) continue;
-            hasClassesAvailable = true;
-            break;
+            if (c.getGuiPosition() >= slots || ItemUtils.isEmpty(c.getIcon())) continue;
+            Collection<Class> existingClasses = pickableClasses.getOrDefault(c.getGroup(), new HashSet<>());
+            existingClasses.add(c);
+            pickableClasses.put(c.getGroup(), existingClasses);
         }
     }
 
-    public boolean hasClassesAvailable() {
-        return hasClassesAvailable;
+    public Map<Integer, Collection<Class>> getAvailableClasses() {
+        return pickableClasses;
     }
 
     @Override
@@ -75,44 +72,34 @@ public class ClassPickerMenu extends Menu {
     @Override
     public void handleMenu(InventoryClickEvent e) {
         e.setCancelled(true);
-        if (!decorativeItems.containsKey(e.getSlot())) {
-            Class clickedClass = getClickedClass(e.getCurrentItem());
-            if (clickedClass != null){
-                if (preConfirmClass == null || !preConfirmClass.equals(clickedClass)){
-                    preConfirmClass = clickedClass;
-                    setMenuItems();
-                    setItemName(inventory.getItem(e.getSlot()), warning.replace("%class%", Utils.getItemName(clickedClass.getIcon()).trim()));
-                } else {
-                    ClassManager.getInstance().setClass(playerMenuUtility.getOwner(), clickedClass);
-                    playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%class%", Utils.getItemName(clickedClass.getIcon()).trim())));
-                    playerMenuUtility.getOwner().closeInventory();
-                }
-            }
+        ItemStack clicked = e.getCurrentItem();
+        if (ItemUtils.isEmpty(clicked)) return;
+        ItemMeta clickedMeta = ItemUtils.getItemMeta(clicked);
+        String clickedClass = clickedMeta.getPersistentDataContainer().get(CLASS_ID_KEY, PersistentDataType.STRING);
+        if (clickedClass == null) {
+            if (!clickedMeta.getPersistentDataContainer().has(ClassManager.CONFIRM_BUTTON, PersistentDataType.INTEGER)) return;
+            if (pickedClasses.size() != pickableClasses.size()) return; // player hasn't picked a class in each available group yet
+            ClassManager.setClasses(playerMenuUtility.getOwner(), pickedClasses.values());
+            playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%class%",
+                    pickedClasses.values().stream().map((c) -> {
+                        ItemMeta meta = ItemUtils.getItemMeta(c.getIcon());
+                        if (meta == null) return "";
+                        return ItemUtils.getItemName(meta).trim();
+                    }).collect(Collectors.joining(", ")))
+            ));
+            playerMenuUtility.getOwner().closeInventory();
+            return;
         }
+        Class selectedClass = ClassManager.getRegisteredClasses().get(clickedClass);
+        if (selectedClass == null) return;
+        pickedClasses.put(selectedClass.getGroup(), selectedClass);
+
+        setMenuItems();
     }
 
     @Override
     public void handleMenu(InventoryDragEvent e) {
         e.setCancelled(true);
-    }
-
-    private Class getClickedClass(ItemStack i){
-        if (Utils.isItemEmptyOrNull(i)) return null;
-        ItemMeta iMeta = i.getItemMeta();
-        if (iMeta == null) return null;
-        if (iMeta.getPersistentDataContainer().has(classIDKey, PersistentDataType.STRING)){
-            String value = iMeta.getPersistentDataContainer().get(classIDKey, PersistentDataType.STRING);
-            if (value == null) return null;
-            return ClassManager.getInstance().getRegisteredClasses().get(value);
-        } else return null;
-    }
-
-    private void setItemName(ItemStack i, String name){
-        if (Utils.isItemEmptyOrNull(i)) return;
-        ItemMeta iMeta = i.getItemMeta();
-        if (iMeta == null) return;
-        iMeta.setDisplayName(Utils.chat(name));
-        i.setItemMeta(iMeta);
     }
 
     @Override
@@ -123,64 +110,42 @@ public class ClassPickerMenu extends Menu {
             }
         }
 
-        for (Class r : ClassManager.getInstance().getRegisteredClasses().values()){
-            if (r.getPermissionRequired() != null){
-                if (!playerMenuUtility.getOwner().hasPermission(r.getPermissionRequired())) continue;
-            }
-            if (!r.getLimitedToRaces().isEmpty()){
-                Race race = RaceManager.getInstance().getRace(playerMenuUtility.getOwner());
-                if (race == null || !r.getLimitedToRaces().contains(race.getName())) continue;
-            }
-            if (r.getGuiPosition() >= slots) continue;
+        for (Integer group : pickableClasses.keySet()){
+            for (Class c : pickableClasses.get(group)){
+                if (c.getGuiPosition() >= slots) continue;
+                boolean unlocked = pickedClasses.get(group) == null || pickedClasses.get(group).equals(c);
+                ItemBuilder icon = new ItemBuilder(unlocked ? c.getIcon() : c.getLockedIcon());
 
-            if (Utils.isItemEmptyOrNull(r.getIcon())) continue;
-            ItemStack icon = r.getIcon().clone();
-            ItemMeta iconMeta = icon.getItemMeta();
-            if (iconMeta == null) continue;
-            iconMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_POTION_EFFECTS);
-            iconMeta.getPersistentDataContainer().set(classIDKey, PersistentDataType.STRING, r.getName());
-            icon.setItemMeta(iconMeta);
-            inventory.setItem(r.getGuiPosition(), icon);
+                icon.flag(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_POTION_EFFECTS);
+                icon.stringTag(CLASS_ID_KEY, c.getName());
+                inventory.setItem(c.getGuiPosition(), icon.get());
+            }
         }
+
+        if (pickedClasses.size() == pickableClasses.size()) inventory.setItem(ClassManager.getConfirmButtonPosition(), ClassManager.getConfirmButton());
     }
 
     private static Map<Integer, ItemStack> populateDecorativeItems(){
-        YamlConfiguration config = ConfigManager.getInstance().getConfig("config.yml").get();
+        YamlConfiguration config = ConfigManager.getConfig("config.yml").get();
         Map<Integer, ItemStack> items = new HashMap<>();
         ConfigurationSection itemSection = config.getConfigurationSection("menus.classes_decoration");
         if (itemSection != null){
             for (String spot : itemSection.getKeys(false)){
-                try {
-                    String value = config.getString("menus.classes_decoration." + spot, "");
-                    int modelData = -1;
-                    String[] args = value.split(";");
-                    Material material = Material.valueOf(args[0]);
-                    if (args.length > 1){
-                        modelData = Integer.parseInt(args[1]);
-                    }
-                    int slot = Integer.parseInt(spot);
-                    items.put(slot, modelData >= 0 ? Utils.setCustomModelData(new ItemStack(material), modelData) : new ItemStack(material));
-                } catch (IllegalArgumentException ignored){
-                    ValhallaRaces.getPlugin().getServer().getLogger().warning("Invalid args given at menus.classes_decoration." + spot);
+                Integer slot = Catch.catchOrElse(() -> Integer.parseInt(spot), null);
+                if (slot == null){
+                    ValhallaRaces.getPlugin().getServer().getLogger().warning("Invalid slot given at menus.classes_decoration." + spot);
+                    continue;
                 }
+                String value = config.getString("menus.classes_decoration." + spot, "");
+                int data = Catch.catchOrElse(() -> Integer.valueOf(value.split(":")[1]), -1);
+                Material material = Catch.catchOrElse(() -> Material.valueOf(value.split(":")[0]), null);
+                if (material == null){
+                    ValhallaRaces.getPlugin().getServer().getLogger().warning("Invalid material given at menus.classes_decoration." + spot);
+                    continue;
+                }
+                items.put(slot, new ItemBuilder(material).data(data).name("&r").get());
             }
         }
         return items;
-    }
-
-    private static String initializeTitle(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("menus.classes_title", "");
-    }
-
-    private static int initializeGuiSize(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getInt("menus.classes_slots", 54);
-    }
-
-    private static String initializeWarningMessage(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("warning_message_class");
-    }
-
-    private static String initializeConfirmationMessage(){
-        return ConfigManager.getInstance().getConfig("config.yml").get().getString("confirm_message_class");
     }
 }

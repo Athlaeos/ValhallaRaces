@@ -4,6 +4,7 @@ import me.athlaeos.valhallaraces.commands.RacesCommand;
 import me.athlaeos.valhallaraces.config.ConfigUpdater;
 import me.athlaeos.valhallaraces.hooks.RacesPlaceholderExpansion;
 import me.athlaeos.valhallaraces.listener.PlayerPickRaceClassListener;
+import me.athlaeos.valhallaraces.listener.ValhallaLoadStatsListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -21,12 +22,13 @@ public final class ValhallaRaces extends JavaPlugin {
         saveConfig("races.yml");
         saveConfig("classes.yml");
 
-        RaceManager.getInstance().loadRaces();
-        ClassManager.getInstance().loadClasses();
+        RaceManager.loadRaces();
+        ClassManager.loadClasses();
         new RacesCommand();
 
         racePickerListener = new PlayerPickRaceClassListener();
         this.getServer().getPluginManager().registerEvents(racePickerListener, this);
+        this.getServer().getPluginManager().registerEvents(new ValhallaLoadStatsListener(), this);
         // Plugin startup logic
         if(getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RacesPlaceholderExpansion().register();

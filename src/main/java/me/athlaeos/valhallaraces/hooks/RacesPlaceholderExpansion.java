@@ -1,5 +1,6 @@
 package me.athlaeos.valhallaraces.hooks;
 
+import me.athlaeos.valhallammo.dom.Catch;
 import me.athlaeos.valhallammo.utility.Utils;
 import me.athlaeos.valhallaraces.Class;
 import me.athlaeos.valhallaraces.ClassManager;
@@ -8,21 +9,22 @@ import me.athlaeos.valhallaraces.RaceManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 public class RacesPlaceholderExpansion extends PlaceholderExpansion {
     @Override
-    public String getAuthor() {
+    public @NotNull String getAuthor() {
         return "Athlaeos";
     }
 
     @Override
-    public String getIdentifier() {
+    public @NotNull String getIdentifier() {
         return "valhallaraces";
     }
 
     @Override
-    public String getVersion() {
-        return "1.0";
+    public @NotNull String getVersion() {
+        return "1.1";
     }
 
     @Override
@@ -33,17 +35,23 @@ public class RacesPlaceholderExpansion extends PlaceholderExpansion {
     @Override
     public String onRequest(OfflinePlayer player, String params) {
         if (player.isOnline()){
-            if(params.equalsIgnoreCase("racename")){
-                Race race = RaceManager.getInstance().getRace((Player) player);
+            if (params.equalsIgnoreCase("racename")){
+                Race race = RaceManager.getRace((Player) player);
                 return race == null ? "" : Utils.chat(race.getDisplayName());
-            } else if(params.equalsIgnoreCase("classname")){
-                Class playerClass = ClassManager.getInstance().getClass((Player) player);
+            } else if (params.startsWith("classname_")){
+                String stringGroup = params.replace("classname_", "");
+                int group = Catch.catchOrElse(() -> Integer.parseInt(stringGroup), -1);
+                if (group < 0) return "";
+                Class playerClass = ClassManager.getClasses((Player) player).get(group);
                 return playerClass == null ? "" : Utils.chat(playerClass.getDisplayName());
-            } else if(params.equalsIgnoreCase("raceprefix")){
-                Race race = RaceManager.getInstance().getRace((Player) player);
+            } else if (params.equalsIgnoreCase("raceprefix")){
+                Race race = RaceManager.getRace((Player) player);
                 return race == null ? "" : Utils.chat(race.getChatPrefix());
-            } else if(params.equalsIgnoreCase("classprefix")){
-                Class playerClass = ClassManager.getInstance().getClass((Player) player);
+            } else if (params.startsWith("classprefix_")){
+                String stringGroup = params.replace("classprefix_", "");
+                int group = Catch.catchOrElse(() -> Integer.parseInt(stringGroup), -1);
+                if (group < 0) return "";
+                Class playerClass = ClassManager.getClasses((Player) player).get(group);
                 return playerClass == null ? "" : Utils.chat(playerClass.getChatPrefix());
             }
         }
