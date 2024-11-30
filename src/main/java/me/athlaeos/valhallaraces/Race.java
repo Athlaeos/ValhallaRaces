@@ -17,16 +17,18 @@ public class Race {
     private final int guiPosition;
     private final Collection<PerkReward> perkRewards;
     private final Collection<String> commands;
+    private final Collection<String> undoCommands;
     private final Location citySpawn;
     private final String permissionRequired;
 
-    public Race(String name, String prefix, Location citySpawn, ItemStack icon, ItemStack lockedIcon, int guiPosition, String permissionRequired, Collection<String> commands, Collection<PerkReward> perkRewards){
+    public Race(String name, String prefix, Location citySpawn, ItemStack icon, ItemStack lockedIcon, int guiPosition, String permissionRequired, Collection<String> commands, Collection<String> undoCommands, Collection<PerkReward> perkRewards){
         this.name = name;
         this.chatPrefix = prefix;
         this.guiPosition = guiPosition;
         this.perkRewards = perkRewards;
         this.permissionRequired = permissionRequired;
         this.commands = commands;
+        this.undoCommands = undoCommands;
         this.icon = icon;
         this.lockedIcon = lockedIcon;
         this.citySpawn = citySpawn;
@@ -35,6 +37,7 @@ public class Race {
     }
 
     public Collection<String> getCommands() { return commands; }
+    public Collection<String> getUndoCommands() {return undoCommands;}
     public String getPermissionRequired() { return permissionRequired; }
     public String getName() { return name; }
     public String getChatPrefix() { return Utils.chat(chatPrefix); }

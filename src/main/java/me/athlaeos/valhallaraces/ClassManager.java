@@ -76,6 +76,7 @@ public class ClassManager {
                 String chatPrefix = config.getString("classes." + c + ".prefix");
                 int guiPosition = config.getInt("classes." + c + ".position");
                 List<String> commands = config.getStringList("classes." + c + ".commands");
+                List<String> undoCommands = config.getStringList("classes." + c + ".undo_commands");
                 List<String> limitToRaces = config.getStringList("classes." + c + ".race_filter");
 
                 Collection<PerkReward> perkRewards = new HashSet<>();
@@ -117,7 +118,7 @@ public class ClassManager {
                         ValhallaRaces.getPlugin().getServer().getPluginManager().addPermission(new Permission(permissionRequired));
                     }
                 }
-                registeredClasses.put(c, new Class(c, chatPrefix, icon, lockedIcon, guiPosition, group, limitToRaces, commands, permissionRequired, perkRewards));
+                registeredClasses.put(c, new Class(c, chatPrefix, icon, lockedIcon, guiPosition, group, limitToRaces, commands, undoCommands, permissionRequired, perkRewards));
             }
         }
     }
@@ -145,12 +146,35 @@ public class ClassManager {
             for (PerkReward reward : c.getPerkRewards()){
                 reward.remove(p);
             }
+
+            for (String command : c.getUndoCommands()){
+                String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
+                if (delayArg != null){
+                    try {
+                        int delay = Integer.parseInt(delayArg);
+                        ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
+                                ValhallaRaces.getPlugin(),
+                                () -> { ValhallaRaces.getPlugin().getServer().dispatchCommand(
+                                        ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
+                                                .replace("%player%", p.getName())
+                                                .replace("<delay:" + delayArg + ">", ""));
+                                }, delay);
+                    } catch (IllegalArgumentException ignored){
+                        ValhallaRaces.getPlugin().getServer().getLogger().warning("Class undo command execution delay in command '/" + command + "' was invalid, no command executed");
+                    }
+                } else {
+                    ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                }
+            }
         }
         if (classes == null || classes.isEmpty()) {
             p.getPersistentDataContainer().remove(CLASS_KEY);
         } else {
             p.getPersistentDataContainer().set(CLASS_KEY, PersistentDataType.STRING, classes.stream().map(Class::getName).collect(Collectors.joining(";")));
             for (Class c : classes){
+                for (PerkReward reward : c.getPerkRewards()){
+                    reward.apply(p);
+                }
                 for (String command : c.getCommands()){
                     String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
                     if (delayArg != null){
@@ -164,7 +188,7 @@ public class ClassManager {
                                                     .replace("<delay:" + delayArg + ">", ""))
                                     , delay);
                         } catch (IllegalArgumentException ignored){
-                            ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
+                            ValhallaRaces.getPlugin().getServer().getLogger().warning("Class command execution delay in command '/" + command + "' was invalid, no command executed");
                         }
                     } else {
                         ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));

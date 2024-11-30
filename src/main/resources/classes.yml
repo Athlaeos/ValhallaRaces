@@ -128,7 +128,7 @@ classes:
       - '&eMiners &7benefit from'
       - '&f- &e+30% &fMining Speed'
       - '&f- &e+10% &fMining Drops'
-    stat_buffs:
+    perk_rewards:
       mining_miningdrops_add: 0.1
       mining_miningspeedbonus_add: 0.3
   farmer:

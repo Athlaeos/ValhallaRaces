@@ -76,6 +76,7 @@ public class RaceManager {
                 String chatPrefix = config.getString("races." + r + ".prefix");
                 int guiPosition = config.getInt("races." + r + ".position");
                 List<String> commands = config.getStringList("races." + r + ".commands");
+                List<String> undoCommands = config.getStringList("races." + r + ".undo_commands");
                 Collection<PerkReward> perkRewards = new HashSet<>();
                 ConfigurationSection rewardSection = config.getConfigurationSection("races." + r + ".perk_rewards");
                 if (rewardSection != null){
@@ -114,7 +115,7 @@ public class RaceManager {
                         ValhallaRaces.getPlugin().getServer().getPluginManager().addPermission(new Permission(permissionRequired));
                     }
                 }
-                registeredRaces.put(r, new Race(r, chatPrefix, cityCenter, icon, lockedIcon, guiPosition, permissionRequired, commands, perkRewards));
+                registeredRaces.put(r, new Race(r, chatPrefix, cityCenter, icon, lockedIcon, guiPosition, permissionRequired, commands, undoCommands, perkRewards));
             }
         }
     }
@@ -129,10 +130,33 @@ public class RaceManager {
             for (PerkReward reward : existingRace.getPerkRewards()){
                 reward.remove(p);
             }
+
+            for (String command : existingRace.getUndoCommands()){
+                String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
+                if (delayArg != null){
+                    try {
+                        int delay = Integer.parseInt(delayArg);
+                        ValhallaRaces.getPlugin().getServer().getScheduler().runTaskLater(
+                                ValhallaRaces.getPlugin(),
+                                () -> { ValhallaRaces.getPlugin().getServer().dispatchCommand(
+                                        ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
+                                                .replace("%player%", p.getName())
+                                                .replace("<delay:" + delayArg + ">", ""));
+                                }, delay);
+                    } catch (IllegalArgumentException ignored){
+                        ValhallaRaces.getPlugin().getServer().getLogger().warning("Race undo command execution delay in command '/" + command + "' was invalid, no command executed");
+                    }
+                } else {
+                    ValhallaRaces.getPlugin().getServer().dispatchCommand(ValhallaRaces.getPlugin().getServer().getConsoleSender(), command.replace("%player%", p.getName()));
+                }
+            }
         }
         if (race == null) {
             p.getPersistentDataContainer().remove(raceKey);
         } else {
+            for (PerkReward reward : race.getPerkRewards()){
+                reward.apply(p);
+            }
             p.getPersistentDataContainer().set(raceKey, PersistentDataType.STRING, race.getName());
             for (String command : race.getCommands()){
                 String delayArg = StringUtils.substringBetween(command, "<delay:", ">");
@@ -145,8 +169,7 @@ public class RaceManager {
                                         ValhallaRaces.getPlugin().getServer().getConsoleSender(), command
                                                 .replace("%player%", p.getName())
                                                 .replace("<delay:" + delayArg + ">", ""));
-                                }
-                                , delay);
+                                }, delay);
                     } catch (IllegalArgumentException ignored){
                         ValhallaRaces.getPlugin().getServer().getLogger().warning("Race command execution delay in command '/" + command + "' was invalid, no command executed");
                     }
