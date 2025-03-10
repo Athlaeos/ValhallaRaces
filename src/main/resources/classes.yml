@@ -1,0 +1,171 @@
+confirm_button_type: STRUCTURE_VOID:-1
+confirm_button_name: '&aConfirm'
+confirm_button_lore: []
+confirm_button_position: 40
+
+classes:
+  warrior:
+    group: 1 # a player can pick 1 class from each group. If you got 3 classes with the same group number, the player can pick one of them
+    position: 10
+    icon: IRON_SWORD:-1
+    icon_locked: BARRIER:-1
+    display_name: '&cWarrior'
+    description:
+      - '&cWarriors &7are opportunistic fighters,'
+      - '&7who prefer the safety of light blades'
+      - '&7and heavy protection.'
+      - '&8&m                                       '
+      - '&cWarriors &7benefit from'
+      - '&f- &c+10% &fArmor'
+      - '&f- &c+5% &fMelee Damage'
+    stat_buffs:
+      MELEE_DAMAGE_DEALT: 0.05 # 10% extra melee damage dealt
+      ARMOR_MULTIPLIER_BONUS: 0.1 # Armor is 10% more effective
+    # race_filter: # This is just an example of how you can limit certain classes to certain races, and potentially make different classes per race
+    #   - human
+    #   - dwarf
+    #   - elf
+    # commands: # This is mostly just an example of how you can execute commands when a race/class is unlocked
+    #   - minecraft:experience add %player% 1 points
+  barbarian:
+    group: 1
+    position: 19
+    icon: IRON_AXE:-1
+    icon_locked: BARRIER:-1
+    display_name: '&cBarbarian'
+    description:
+      - '&cBarbarians &7are relentless fighters,'
+      - '&7who prefer to decimate their foes'
+      - '&7through sheer strength and brute force.'
+      - '&8&m                                       '
+      - '&cBarbarians &7benefit from'
+      - '&f- &c+20% &fKnockback Resistance'
+      - '&f- &c+10% &fMelee Damage'
+    stat_buffs:
+      KNOCKBACK_RESISTANCE: 0.2
+      MELEE_DAMAGE_DEALT: 0.1
+  ranger:
+    group: 1
+    position: 28
+    icon: BOW:-1
+    icon_locked: BARRIER:-1
+    display_name: '&cRanger'
+    description:
+      - '&cRangers &7are stealthy assassins,'
+      - '&7who prefer not to fight close ranged at'
+      - '&7all and instead take out their foes at'
+      - '&7a safe distance.'
+      - '&8&m                                       '
+      - '&cRangers &7benefit from'
+      - '&f- &c+2 &fAccuracy'
+      - '&f- &c+10% &fRanged Damage'
+    stat_buffs:
+      RANGED_INACCURACY: -2
+      RANGED_DAMAGE_DEALT: 0.1
+  alchemist:
+    group: 2
+    position: 13
+    icon: BREWING_STAND:-1
+    icon_locked: BARRIER:-1
+    display_name: '&dAlchemist'
+    description:
+      - '&dAlchemists &7are fantastic chemists,'
+      - '&7able to transmute materials into others,'
+      - '&7melt their enemies with potions, and'
+      - '&7assist their party with healing and buffs.'
+      - '&8&m                                       '
+      - '&dAlchemists &7benefit from'
+      - '&f- &d+25 &fPotion Quality'
+      - '&f- &d+50% &fBrewing Speed'
+    stat_buffs:
+      ALCHEMY_QUALITY_GENERAL: 25
+      ALCHEMY_BREW_SPEED: 0.5
+  enchanter:
+    group: 2
+    position: 22
+    icon: ENCHANTMENT_TABLE:-1
+    icon_locked: BARRIER:-1
+    display_name: '&bEnchanter'
+    description:
+      - '&bEnchanters &7are scholars of magic,'
+      - '&7able to imbue items with spells to'
+      - '&7enhance their strengths.'
+      - '&8&m                                       '
+      - '&bEnchanters &7benefit from'
+      - '&f- &b+25 &fEnchanting Quality'
+      - '&f- &b+20% &fEnchanting Experience'
+    stat_buffs:
+      ENCHANTING_QUALITY: 25
+      ENCHANTING_VANILLA_EXP_GAIN: 0.2
+  blacksmith:
+    group: 2
+    position: 31
+    icon: ANVIL:-1
+    icon_locked: BARRIER:-1
+    display_name: '&aBlacksmith'
+    description:
+      - '&aBlacksmiths &7are experts of metal,'
+      - '&7creating more durable tools and armor'
+      - '&7and razor sharp, well balanced blades.'
+      - '&8&m                                       '
+      - '&aBlacksmiths &7benefit from'
+      - '&f- &a+25 &fSmithing Quality'
+      - '&f- &a-20% &fDurability Taken'
+    stat_buffs:
+      SMITHING_QUALITY_GENERAL: 25
+      DURABILITY_BONUS: 0.2
+  miner:
+    group: 3
+    position: 16
+    icon: IRON_PICKAXE:-1
+    icon_locked: BARRIER:-1
+    display_name: '&eMiner'
+    description:
+      - '&eMiners &7delve deep into the earth,'
+      - '&7looking for riches, and serve as the'
+      - '&7backbone of industry.'
+      - '&8&m                                       '
+      - '&eMiners &7benefit from'
+      - '&f- &e+30% &fMining Speed'
+      - '&f- &e+10% &fMining Drops'
+    perk_rewards:
+      mining_miningdrops_add: 0.1
+      mining_miningspeedbonus_add: 0.3
+  farmer:
+    group: 3
+    position: 25
+    icon: IRON_HOE:-1
+    icon_locked: BARRIER:-1
+    display_name: '&eFarmer-Fisherman'
+    description:
+      - '&eFarmers &7live a calm, simple life'
+      - '&7providing their cities with food'
+      - '&7and ocean treasures.'
+      - '&8&m                                       '
+      - '&eFarmers &7benefit from'
+      - '&f- &e+3 &fFishing Luck'
+      - '&f- &e+30% &fFarming Drops'
+      - '&f- &e+20% &fFishing Speed'
+    stat_buffs:
+      FISHING_LUCK: 3
+      FISHING_SPEED_MULTIPLIER: 0.2
+    perk_rewards:
+      farming_farmingdrops_add: 0.3
+  terraformer:
+    group: 3
+    position: 34
+    icon: IRON_SHOVEL:-1
+    icon_locked: BARRIER:-1
+    display_name: '&eTerraformer'
+    description:
+      - '&eTerraformers &7construct, shape, and'
+      - '&7maintain the world around them.'
+      - '&7Most suitable for the creative types.'
+      - '&8&m                                       '
+      - '&eTerraformers &7benefit from'
+      - '&f- &e+50% &fWoodcutting Drops'
+      - '&f- &e+30% &fWoodcutting and Digging Speed'
+    perk_rewards:
+      woodcutting_woodcuttingdrops_add: 0.5
+      woodcutting_woodcuttingspeedbonus_add: 0.3
+      digging_diggingspeedbonus_add: 0.3
