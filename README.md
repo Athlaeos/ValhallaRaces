@@ -10,8 +10,8 @@ Integrate ValhallaRaces into your project with Maven
 <dependencies>
     <dependency>
         <groupId>me.athlaeos</groupId>
-        <artifactId>valhallammo-dist</artifactId>
-        <version>dev-0.2</version>
+        <artifactId>valhallaraces</artifactId>
+        <version>2.1</version>
     </dependency>
 </dependencies>
 ```
