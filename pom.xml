@@ -13,12 +13,13 @@
 
     <description>Hooks into ValhallaMMO to implement races, each with their own buffs and features</description>
     <properties>
-        <revision>2.1</revision>
+        <revision>2.2</revision>
         <testServerPath>C:\Users\Athlaeos\Desktop\Minecraft Servers\1.21.4\plugins</testServerPath>
 
         <outputDirectory>target</outputDirectory>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <repo.user>athlaeos</repo.user>
     </properties>
 
     <profiles>
@@ -39,6 +40,14 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <!-- use the same repo you declared in distributionManagement -->
+                    <repositoryId>${distributionManagement.repository.id}</repositoryId>
+                    <url>${distributionManagement.repository.url}</url>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -92,6 +101,10 @@
             <id>placeholderapi</id>
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
+        <repository>
+            <id>repsy</id>
+            <url>https://repo.repsy.io/mvn/athlaeos/valhallammo</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -115,10 +128,15 @@
         </dependency>
         <dependency>
             <groupId>me.athlaeos</groupId>
-            <artifactId>valhallammo-core</artifactId>
-            <version>1.3.9</version>
-            <scope>system</scope>
-            <systemPath>C:/Users/Athlaeos/Desktop/Java Projects/ValhallaRaces/ValhallaMMO_1.3.9.jar</systemPath>
+            <artifactId>valhallammo-dist</artifactId>
+            <version>dev-0.4</version>
         </dependency>
     </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>repsy</id>
+            <url>https://repo.repsy.io/mvn/${repo.user}/valhallaraces</url>
+        </repository>
+    </distributionManagement>
 </project>
