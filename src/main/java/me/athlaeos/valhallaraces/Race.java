@@ -1,5 +1,6 @@
 package me.athlaeos.valhallaraces;
 
+import me.athlaeos.valhallammo.item.ItemBuilder;
 import me.athlaeos.valhallammo.skills.perk_rewards.PerkReward;
 import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallammo.utility.Utils;
@@ -33,7 +34,7 @@ public class Race {
         this.lockedIcon = lockedIcon;
         this.citySpawn = citySpawn;
 
-        this.displayName = ItemUtils.getItemName(ItemUtils.getItemMeta(icon)).trim();
+        this.displayName = ItemUtils.getItemName(new ItemBuilder(icon)).trim();
     }
 
     public Collection<String> getCommands() { return commands; }

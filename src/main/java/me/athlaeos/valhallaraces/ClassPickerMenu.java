@@ -86,11 +86,7 @@ public class ClassPickerMenu extends Menu {
             stillInSelection.remove(playerMenuUtility.getOwner().getUniqueId());
             ClassManager.setClasses(playerMenuUtility.getOwner(), pickedClasses.values());
             playerMenuUtility.getOwner().sendMessage(Utils.chat(completed.replace("%class%",
-                    pickedClasses.values().stream().map((c) -> {
-                        ItemMeta meta = ItemUtils.getItemMeta(c.getIcon());
-                        if (meta == null) return "";
-                        return ItemUtils.getItemName(meta).trim();
-                    }).collect(Collectors.joining(", ")))
+                    pickedClasses.values().stream().map((c) -> ItemUtils.getItemName(new ItemBuilder(c.getIcon())).trim()).collect(Collectors.joining(", ")))
             ));
             playerMenuUtility.getOwner().closeInventory();
             return;

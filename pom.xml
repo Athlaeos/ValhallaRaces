@@ -14,7 +14,7 @@
     <description>Hooks into ValhallaMMO to implement races, each with their own buffs and features</description>
     <properties>
         <revision>2.2</revision>
-        <testServerPath>C:\Users\Athlaeos\Desktop\Minecraft Servers\1.21.5\plugins</testServerPath>
+        <testServerPath>C:\Users\Athlaeos\Desktop\Minecraft Servers\1.21.7\plugins</testServerPath>
 
         <outputDirectory>target</outputDirectory>
         <java.version>1.8</java.version>
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>me.athlaeos</groupId>
             <artifactId>valhallammo-dist</artifactId>
-            <version>dev-0.4</version>
+            <version>premium_dev-0.10</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

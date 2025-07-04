@@ -1,6 +1,7 @@
 package me.athlaeos.valhallaraces.commands;
 
 import me.athlaeos.valhallammo.gui.PlayerMenuUtilManager;
+import me.athlaeos.valhallammo.item.ItemBuilder;
 import me.athlaeos.valhallammo.utility.ItemUtils;
 import me.athlaeos.valhallammo.utility.Utils;
 import me.athlaeos.valhallaraces.*;
@@ -131,7 +132,7 @@ public class RacesCommand implements TabExecutor {
                             for (Player target : targets){
                                 RaceManager.setRace(target, race);
                             }
-                            sender.sendMessage(Utils.chat("&aRace set&7, player is now a/an " + ItemUtils.getItemName(ItemUtils.getItemMeta(race.getIcon()))));
+                            sender.sendMessage(Utils.chat("&aRace set&7, player is now a/an " + ItemUtils.getItemName(new ItemBuilder(race.getIcon()))));
                             return true;
                         } else if (args[1].equalsIgnoreCase("class")) {
                             String[] stringClasses = args[3].split(";");
