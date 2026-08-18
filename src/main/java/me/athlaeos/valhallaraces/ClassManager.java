@@ -142,7 +142,14 @@ public class ClassManager {
 
     public static void setClasses(Player p, Collection<Class> classes){
         Map<Integer, Class> existingClasses = getClasses(p);
+        Map<Integer, Class> toClassMap = new HashMap<>();
+        if (classes != null){
+            for (Class c : classes){
+                toClassMap.put(c.getGroup(), c);
+            }
+        }
         for (Class c : existingClasses.values()){
+            if (!toClassMap.containsKey(c.getGroup())) continue;
             for (PerkReward reward : c.getPerkRewards()){
                 reward.remove(p);
             }
@@ -170,7 +177,8 @@ public class ClassManager {
         if (classes == null || classes.isEmpty()) {
             p.getPersistentDataContainer().remove(CLASS_KEY);
         } else {
-            p.getPersistentDataContainer().set(CLASS_KEY, PersistentDataType.STRING, classes.stream().map(Class::getName).collect(Collectors.joining(";")));
+            existingClasses.putAll(toClassMap);
+            p.getPersistentDataContainer().set(CLASS_KEY, PersistentDataType.STRING, existingClasses.values().stream().map(Class::getName).collect(Collectors.joining(";")));
             for (Class c : classes){
                 for (PerkReward reward : c.getPerkRewards()){
                     reward.apply(p);
